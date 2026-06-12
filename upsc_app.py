@@ -84,7 +84,7 @@ else:
     genai.configure(api_key="YOUR_API_KEY_HERE") 
 
 # ---------------------------------------------------------
-# AI Data Generation (Strictly No Caching)
+# AI Evaluation & Generation Engines
 # ---------------------------------------------------------
 def fetch_topic_data_from_ai(topic):
     model = genai.GenerativeModel('gemini-2.5-flash')
@@ -147,13 +147,44 @@ def fetch_topic_data_from_ai(topic):
     try:
         response = model.generate_content(prompt)
         raw_text = response.text.strip()
-        
         start_index = raw_text.find('{')
         end_index = raw_text.rfind('}')
-        
         if start_index != -1 and end_index != -1:
             clean_json = raw_text[start_index:end_index+1]
             return json.loads(clean_json, strict=False)
+        return None
+    except Exception as e:
+        return None
+
+def evaluate_mains_answer(question, user_answer):
+    model = genai.GenerativeModel('gemini-2.5-flash')
+    
+    prompt = f"""
+    You are a strict, veteran civil services examiner evaluation board officer grading a UPSC Mains answer sheet.
+    
+    Question: {question}
+    Candidate's Answer: {user_answer}
+    
+    Critique this response rigorously under exact UPSC standards out of a maximum of 15 marks. Be objective. Real examiners rarely award above 9/15 unless the answer is masterfully multi-dimensional.
+    
+    Respond ONLY with a valid JSON object matching this structure exactly:
+    {{
+        "marks_allocated": "X/15",
+        "intro_critique": "Analysis of their opening, conceptual framework, definitions, or context...",
+        "body_critique": "Analysis of arguments, dimensions explored, facts integration, structural coherence...",
+        "conclusion_critique": "Analysis of the way forward, balance, optimism, and alignment with policy frameworks...",
+        "explicit_strengths": ["Strength 1", "Strength 2"],
+        "critical_improvements": ["What to add to score 2 more marks", "Missing parameters or data links"],
+        "model_approach": "A brief overview or bullet points of what a top-scoring baseline approach would feature..."
+    }}
+    """
+    try:
+        response = model.generate_content(prompt)
+        raw_text = response.text.strip()
+        start = raw_text.find('{')
+        end = raw_text.rfind('}')
+        if start != -1 and end != -1:
+            return json.loads(raw_text[start:end+1], strict=False)
         return None
     except Exception as e:
         return None
@@ -172,6 +203,9 @@ if st.sidebar.button("🚀 Launch AI Engine"):
             fresh_data = fetch_topic_data_from_ai(search_query)
             if fresh_data:
                 st.session_state.current_data = fresh_data
+                # Reset old answer evaluations when a new topic is loaded
+                if 'active_evaluation' in st.session_state:
+                    del st.session_state.active_evaluation
                 st.toast("Dashboard successfully generated!", icon="✅")
             else:
                 st.sidebar.error("Data generation failed due to size limits. Try again.")
@@ -286,26 +320,88 @@ else:
                                 st.info(f"**Analysis:** {pyq.get('explanation')}")
                     st.markdown("---")
 
-    # --- PAGE 6: 15 MAINS QUESTIONS ---
+    # --- PAGE 6: 15 MAINS QUESTIONS WITH ACTIVE AI GRADING ---
     elif page == "✍️ Mains Masterclass (15 Qs)":
-        st.subheader("Mains Answer Draft Simulator")
+        st.subheader("Mains Answer Writing & AI Evaluation Lab")
         questions = [q['q'] for q in data.get('pyq_mains', []) if 'q' in q]
         
         if questions:
             st.caption(f"Loaded {len(questions)} analytical questions.")
-            selected_q = st.selectbox("Select your target question:", questions)
-            st.write(f"**Your Mission:** {selected_q}")
+            selected_q = st.selectbox("Select your target question to attempt:", questions)
             
-            answer = st.text_area("Draft your response below (Aim for 150 - 250 words):", height=300)
-            words = len(answer.split())
+            # Wipe evaluation clear if student changes the active question drop-down
+            if 'eval_question_track' not in st.session_state or st.session_state.eval_question_track != selected_q:
+                st.session_state.eval_question_track = selected_q
+                if 'active_evaluation' in st.session_state:
+                    del st.session_state.active_evaluation
+
+            st.markdown(f"**Mission Prompt:** *{selected_q}*")
             
-            st.progress(min(words / 250, 1.0))
-            st.caption(f"Current Word Count: {words} / 250")
+            # Interactive Answer Workspace
+            answer_text = st.text_area(
+                "Write or refine your draft answer below (Aim for 150 - 250 words):", 
+                height=300, 
+                placeholder="Begin structuring your response with a strong introduction...",
+                key="mains_text_input_area"
+            )
             
-            if st.button("Submit Draft for Review"):
-                if words < 50:
-                    st.error("Draft is too brief. Expand on the core concepts and impacts.")
+            word_count = len(answer_text.split())
+            st.progress(min(word_count / 250, 1.0))
+            st.caption(f"Current Word Count: **{word_count}** / 250 maximum benchmark")
+            
+            col_actions_1, col_actions_2 = st.columns([1, 4])
+            with col_actions_1:
+                submit_clicked = st.button("Submit for AI Evaluation")
+            with col_actions_2:
+                if st.button("Clear Answer Workspace"):
+                    st.session_state.mains_text_input_area = ""
+                    if 'active_evaluation' in st.session_state:
+                        del st.session_state.active_evaluation
+                    st.rerun()
+
+            if submit_clicked:
+                if word_count < 40:
+                    st.error("Your draft is too brief to undergo standard civil services criteria evaluation. Expand your structural framework.")
                 else:
-                    st.success("Draft successfully locked in! 📝")
+                    with st.spinner("🔍 Reviewing structural paradigms, facts coverage, and assigning marks..."):
+                        evaluation_result = evaluate_mains_answer(selected_q, answer_text)
+                        if evaluation_result:
+                            st.session_state.active_evaluation = evaluation_result
+                        else:
+                            st.error("Evaluation engine timeout or formatting collision. Please re-trigger the verification.")
+
+            # Display saved active grading assessment matrix
+            if 'active_evaluation' in st.session_state and st.session_state.active_evaluation:
+                eval_data = st.session_state.active_evaluation
+                st.markdown("---")
+                st.subheader("🎯 Evaluation Dashboard Results")
+                
+                metric_col, structural_col = st.columns([1, 3])
+                with metric_col:
+                    st.metric(label="Indicative Score Allocated", value=eval_data.get('marks_allocated', 'N/A'))
+                    st.caption("⚠️ *AI scores are strictly indicative evaluation guidelines. Always verify crucial data points and official case laws against primary reference sources.*")
+                    
+                with structural_col:
+                    st.info(f"**Structural Blueprint Feedback**")
+                    st.markdown(f"**1. Introduction Contextualization:**\n{eval_data.get('intro_critique', '')}")
+                    st.markdown(f"**2. Body Analysis & Multi-Dimensional Data Coverage:**\n{eval_data.get('body_critique', '')}")
+                    st.markdown(f"**3. Conclusion & Forward-Looking Policy Framework Alignment:**\n{eval_data.get('conclusion_critique', '')}")
+                
+                st.markdown("---")
+                st_col_left, st_col_right = st.columns(2)
+                with st_col_left:
+                    st.success("### ⭐ Structural Strengths Captured")
+                    for strength in eval_data.get('explicit_strengths', []):
+                        st.markdown(f"- {strength}")
+                with st_col_right:
+                    st.warning("### 📈 Core Actions to Earn +2 Marks")
+                    for improvement in eval_data.get('critical_improvements', []):
+                        st.markdown(f"- {improvement}")
+                
+                st.markdown("---")
+                with st.expander("📘 Review Optimal Model Baseline Framework"):
+                    st.markdown(eval_data.get('model_approach', 'Model blueprint text not generated.'))
+                    
+                st.success("📝 **Feedback Processed.** You can edit your text in the workspace box above right now to adjust parameters and hit 'Submit for AI Evaluation' again to track your adjusted score timeline!")
         else:
-            st.info("No Mains questions available.")
+            st.info("No Mains structural questions available.")
