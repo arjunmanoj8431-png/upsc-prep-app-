@@ -74,8 +74,7 @@ def fetch_topic_data_from_ai(topic):
             raw_text = raw_text[3:]
         if raw_text.endswith("```"):
             raw_text = raw_text[:-3]
-            
-        data = json.loads(raw_text.strip())
+            data = json.loads(raw_text.strip(), strict=False)
         return data
     except Exception as e:
         st.error(f"Error fetching data from AI: {e}")
