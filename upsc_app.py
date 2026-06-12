@@ -31,7 +31,7 @@ def fetch_topic_data_from_ai(topic):
     """
     Calls the Gemini API, forces a JSON response, and returns the parsed dictionary.
     """
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-2.5-flash')
     
     # We use a highly detailed prompt to ensure the output exactly matches our app's structure
     prompt = f"""
