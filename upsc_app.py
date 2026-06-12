@@ -1,16 +1,16 @@
 import streamlit as st
 import google.generativeai as genai
 import json
-from typing import List, TypedDict
+import re
 
 # ==============================================================================
-# 1. PAGE SETUP & MOBILE-FIRST CSS
+# 1. GLOBAL INTERFACE PROPERTIES & MOBILE-ADAPTIVE CSS
 # ==============================================================================
 st.set_page_config(page_title="UPSC AI Pro", layout="centered", page_icon="🏛️")
 
 st.markdown("""
     <style>
-    /* Gradient Buttons */
+    /* Full-width touch targets optimized for web and mobile viewports */
     .stButton>button { 
         background: linear-gradient(135deg, #FF416C 0%, #FF4B2B 100%); 
         color: white !important; 
@@ -18,10 +18,11 @@ st.markdown("""
         font-weight: 800; 
         width: 100%; 
         padding: 0.6rem;
+        border: none;
     }
-    .stButton>button:hover { transform: scale(1.02); }
+    .stButton>button:hover { transform: scale(1.01); }
     
-    /* Theme-Agnostic Search Box */
+    /* High-contrast form elements resilient to platform dark mode overrides */
     div[data-baseweb="input"] { 
         background-color: #ffffff !important; 
         border: 2px solid #26D0CE !important; 
@@ -30,14 +31,14 @@ st.markdown("""
     div[data-baseweb="input"] input { 
         color: #000000 !important; 
         -webkit-text-fill-color: #000000 !important; 
-        font-weight: bold; 
+        font-weight: bold !important; 
     }
     div[data-baseweb="input"] input::placeholder {
         color: #666666 !important;
         -webkit-text-fill-color: #666666 !important;
     }
     
-    /* Vibrant Headings */
+    /* Text layout enhancement for long-form reading configuration */
     h1, h2, h3 { 
         background: -webkit-linear-gradient(45deg, #00b4db, #0083b0); 
         -webkit-background-clip: text; 
@@ -48,51 +49,18 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==============================================================================
-# 2. STRICT TYPED SCHEMAS (GUARANTEES PERFECT JSON)
+# 2. RUNTIME STREAM REPAIR ENGINE (PARSING INSURANCE POLICY)
 # ==============================================================================
-class CheatSheetSchema(TypedDict):
-    constitutional_legal_basis: str
-    statistics_reports: str
-    keywords: str
-    current_affairs_context: str
-    challenges_solutions: str
-
-class FlowchartSchema(TypedDict):
-    title: str
-    dot_code: str
-
-class CurrentAffairsSchema(TypedDict):
-    gs_paper: str
-    headline: str
-    relevance: str
-
-class MCQSchema(TypedDict):
-    question: str
-    options: List[str]
-    correct_answer: str
-    short_explanation: str
-
-class DashboardSchema(TypedDict):
-    topic_title: str
-    core_explanation: str
-    important_subtopics: List[str]
-    cheat_sheet: CheatSheetSchema
-    flowcharts: List[FlowchartSchema]
-    recent_news: List[CurrentAffairsSchema]
-    prelims_mcqs: List[MCQSchema]
-    mains_questions: List[str]
-
-class GradingSchema(TypedDict):
-    marks_out_of_15: str
-    introduction_feedback: str
-    body_feedback: str
-    conclusion_feedback: str
-    strengths: List[str]
-    improvements: List[str]
-    ideal_framework: str
+def repair_and_load_json(raw_text: str):
+    """Isolates core JSON strings from accidental structural anomalies."""
+    clean_text = raw_text.strip()
+    clean_text = re.sub(r"^```json\s*", "", clean_text)
+    clean_text = re.sub(r"^```\s*", "", clean_text)
+    clean_text = re.sub(r"\s*```$", "", clean_text)
+    return json.loads(clean_text, strict=False)
 
 # ==============================================================================
-# 3. API CONFIGURATION
+# 3. CORE SERVICE CLIENT CONFIGURATION
 # ==============================================================================
 if "GEMINI_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
@@ -100,191 +68,224 @@ else:
     genai.configure(api_key="YOUR_API_KEY_HERE") 
 
 # ==============================================================================
-# 4. GENERATION ENGINES (GEMINI 2.5 FLASH)
+# 4. DISCRETE PROCESSING ENGINES (GEMINI 2.5 FLASH EXCLUSIVE)
 # ==============================================================================
 def forge_dashboard(topic: str):
-    """Generates the main dashboard using strict JSON Schema enforcement and massive data prompts."""
+    """Compiles macro-level dashboard datasets mapping strictly to core constraints."""
     model = genai.GenerativeModel('gemini-2.5-flash')
     
     prompt = f"""
-    You are an elite UPSC professor. Create a MASSIVE, highly detailed study dashboard for: "{topic}".
+    You are an elite UPSC professor. Create a MASSIVE, highly detailed study dashboard for the topic: "{topic}".
     
-    You are constrained to a strict JSON schema. To satisfy the requirements, you MUST follow these volume constraints. DO NOT BE LAZY:
+    CRITICAL SYNTAX RULES:
+    1. Output strictly in valid JSON layout format.
+    2. DO NOT use unescaped double quotes inside your string values. If you need quotes inside text, use single quotes (').
+    3. DO NOT use literal structural line breaks inside string arguments. Use explicit '\\n' character sequences instead.
     
-    1. 'core_explanation': Write a comprehensive 3-to-4 paragraph deep-dive. DO NOT be brief.
-    2. 'flowcharts': You MUST generate EXACTLY 5 distinct flowcharts. Do not stop at 1.
-       - Map 1: Core Mechanism / Concept
-       - Map 2: Historical Context / Background
-       - Map 3: Institutional / Legal Setup
-       - Map 4: Impacts & Challenges
-       - Map 5: Strategic Way Forward
-    3. 'prelims_mcqs': You MUST generate EXACTLY 15 high-difficulty MCQs.
-    4. 'mains_questions': You MUST generate EXACTLY 10 analytical questions.
-    5. 'important_subtopics': Provide 5 to 7 high-yield subtopics.
-    6. 'recent_news': Provide exactly 3 current affairs developments.
-    7. 'cheat_sheet': Fill out every single key with a dense, detailed paragraph of information.
+    VOLUME MAPPING MANDATES (DO NOT TRUNCATE OR OMIT):
+    - 'explanation': Write a comprehensive 3-paragraph structural breakdown.
+    - 'flowcharts': You MUST generate EXACTLY 5 distinct flowchart nodes. Build structural definitions mapping out core components, timeline evolution, institutional setups, current bottlenecks, and strategic policy solutions.
+    - 'prelims': You MUST generate EXACTLY 15 distinct, advanced multiple-choice questions.
+    - 'mains': You MUST generate EXACTLY 10 distinct high-level analytical questions.
+    - 'important_topics': Highlight 5 to 7 related operational subtopics.
+    - 'current_affairs': Map 3 specific contemporary case developments.
+    - 'cheat_sheet': Provide rich, data-dense informational strings across all 5 standard keys.
     
-    For Graphviz DOT codes inside the flowcharts, use standard double quotes for your labels (e.g., node [label="Supreme Court"]). The JSON engine will automatically escape them.
+    Structure your JSON layout EXACTLY according to this blueprint framework:
+    {{
+        "title": "Normalized Topic Title",
+        "explanation": "...",
+        "important_topics": ["Subtopic A", "Subtopic B"],
+        "cheat_sheet": {{
+            "Constitutional_and_Legal_Basis": "...",
+            "Statistics_and_Reports": "...",
+            "Conceptual_Keywords": "...",
+            "Current_Affairs_Context": "...",
+            "Challenges_and_Solutions": "..."
+        }},
+        "flowcharts": [
+            {{"title": "1. Structural Framework Blueprint", "code": "digraph G {{ rankdir=TB; node [shape=box]; A -> B; }}"}}
+        ],
+        "current_affairs": [
+            {{"gs_paper": "GS Paper X", "headline": "...", "relevance": "...", "impact": "..."}}
+        ],
+        "prelims": [
+            {{"q": "Advanced Question Text...", "options": ["A) Opt 1", "B) Opt 2", "C) Opt 3", "D) Opt 4"], "answer": "A) Opt 1", "explanation": "Deep conceptual analysis..."}}
+        ],
+        "mains": [
+            "1. Macro Question Prompt...",
+            "2. Macro Question Prompt..."
+        ]
+    }}
     """
-    
     try:
         response = model.generate_content(
             prompt,
-            generation_config=genai.GenerationConfig(
-                max_output_tokens=8192,
-                temperature=0.25,
-                response_mime_type="application/json",
-                response_schema=DashboardSchema
-            )
+            generation_config={
+                "max_output_tokens": 8192,
+                "temperature": 0.2,
+                "response_mime_type": "application/json"
+            }
         )
-        return json.loads(response.text)
+        return response.text
     except Exception as e:
-        st.error(f"Generation Engine Error: {e}")
+        st.error(f"Upstream API Communication Timeout: {e}")
         return None
 
 def grade_answer(question: str, answer: str):
-    """Grades the mains answer using strict JSON Schema enforcement."""
+    """Evaluates standalone manuscript compositions across micro-analytical constraints."""
     model = genai.GenerativeModel('gemini-2.5-flash')
     
     prompt = f"""
-    Act as a strict UPSC examiner. Grade this out of 15 marks. Provide detailed feedback.
+    Act as a strict Civil Services Examiner evaluation officer. Grade this candidate answer out of a maximum of 15 marks.
     Question: {question}
     Answer: {answer}
-    """
     
+    Return output strictly matching this clean JSON layout formatting:
+    {{
+        "marks": "X/15",
+        "intro": "Critical opening evaluation...",
+        "body": "Analysis of multi-dimensional core arguments...",
+        "conclusion": "Policy paradigm recommendation check...",
+        "strengths": ["Item 1", "Item 2"],
+        "improvements": ["Item 1", "Item 2"],
+        "ideal_framework": "Detailed blueprint roadmap for maximum score baseline..."
+    }}
+    """
     try:
         response = model.generate_content(
             prompt,
-            generation_config=genai.GenerationConfig(
-                temperature=0.1,
-                response_mime_type="application/json",
-                response_schema=GradingSchema
-            )
+            generation_config={"temperature": 0.1, "response_mime_type": "application/json"}
         )
-        return json.loads(response.text)
+        return response.text
     except Exception as e:
-        st.error(f"Grading Engine Error: {e}")
+        st.error(f"Upstream API Communication Timeout: {e}")
         return None
 
 # ==============================================================================
-# 5. UI ROUTING & STATE CONTROLS
+# 5. SIDEBAR NAVIGATION & RUNTIME ENVIRONMENT HOOKS
 # ==============================================================================
 st.sidebar.markdown("<h2 style='text-align: center;'>✨ UPSC Pro Dash</h2>", unsafe_allow_html=True)
 
-user_topic = st.sidebar.text_input("🔍 Enter Syllabus Topic:", placeholder="e.g., Monetary Policy")
+user_topic = st.sidebar.text_input("🔍 Enter Syllabus Topic:", placeholder="e.g., FinTech Regulation")
 
 if st.sidebar.button("🚀 Launch AI Engine"):
     if user_topic:
-        with st.spinner("⚡ Forging massive dataset via Gemini 2.5 Flash (Takes ~10-15 seconds)..."):
-            new_data = forge_dashboard(user_topic)
-            if new_data:
-                st.session_state.app_data = new_data
-                st.session_state.pop('mains_grade', None) # Clear old grades
-                st.toast("Dashboard Ready!", icon="✅")
+        with st.spinner("⚡ Processing structured telemetry via Gemini 2.5 Flash..."):
+            raw_response = forge_dashboard(user_topic)
+            if raw_response:
+                try:
+                    parsed_data = repair_and_load_json(raw_response)
+                    st.session_state.app_data = parsed_data
+                    st.session_state.pop('mains_grade', None)
+                    st.toast("Dashboard compiling routine successful!", icon="✅")
+                except Exception as parse_error:
+                    st.error(f"Intercepted broken structural output sequence: {parse_error}")
+                    with st.expander("🛠️ View Raw Recovered Text Matrix", expanded=True):
+                        st.code(raw_response, language="json")
     else:
-        st.sidebar.warning("Please enter a topic.")
+        st.sidebar.warning("Operational target required. Define a syllabus vector.")
 
 st.sidebar.markdown("---")
 view = st.sidebar.radio(
-    "📂 Modules",
+    "📂 Active Module Workspace",
     ["📖 Core Concepts", "⚡ 5-Pillar Cheat Sheet", "🎨 Flowcharts", "📰 Current Affairs", "🎯 Prelims (15 Qs)", "✍️ Mains Lab (10 Qs)"]
 )
 
 # ==============================================================================
-# 6. MAIN CONTENT RENDERING
+# 6. RUNTIME DATA PRESENTATION PARADIGMS
 # ==============================================================================
 if 'app_data' not in st.session_state or not st.session_state.app_data:
-    st.markdown("<h2 style='text-align: center; margin-top: 10vh;'>System Ready. 🚀</h2>", unsafe_allow_html=True)
-    st.info("👈 Enter a topic in the sidebar and launch the engine. The AI will output deep, structured data without crashing.")
+    st.markdown("<h2 style='text-align: center; margin-top: 10vh;'>System Engine Idle. 🚀</h2>", unsafe_allow_html=True)
+    st.info("👈 Enter an academic topic parameter in the master configuration dock to activate runtime modules.")
 else:
     db = st.session_state.app_data
-    st.header(f"📌 {db.get('topic_title', 'Dashboard')}")
+    topic_id = db.get('title', 'default_node').replace(" ", "_") # Dynamic key factor to neutralize component bleed
+    st.header(f"📌 {db.get('title', 'Active Workspace')}")
     st.markdown("---")
 
-    # --- CORE CONCEPTS ---
+    # --- VIEW 1: CORE CONCEPTS ---
     if view == "📖 Core Concepts":
-        st.markdown(db.get('core_explanation', 'No explanation provided.'))
-        st.warning("🔥 **High-Yield Targets**")
-        for topic in db.get('important_subtopics', []):
+        st.markdown(db.get('explanation', 'Data index entry missing.'))
+        st.warning("🔥 **Syllabus Focus Focal Points**")
+        for topic in db.get('important_topics', []):
             st.markdown(f"- {topic}")
 
-    # --- CHEAT SHEET ---
+    # --- VIEW 2: 5-PILLAR CHEAT SHEET ---
     elif view == "⚡ 5-Pillar Cheat Sheet":
-        st.subheader("Strategic Overview")
+        st.subheader("High-Density Revision Matrix")
         for key, val in db.get('cheat_sheet', {}).items():
             clean_title = key.replace('_', ' ').title()
             st.info(f"### {clean_title}\n\n{val}")
 
-    # --- FLOWCHARTS ---
+    # --- VIEW 3: FLOWCHARTS ---
     elif view == "🎨 Flowcharts":
-        st.subheader("Process & Structure Maps")
-        st.caption("If rendering fails on mobile, use the Raw Code expander.")
+        st.subheader("Process Mechanism Blueprints")
+        st.caption("Visual assets parse down automatically. Raw DOT scripts are exposed beneath instances as a hardware fallback layer.")
         
         flowcharts = db.get('flowcharts', [])
-        if not flowcharts:
-            st.info("No flowcharts generated.")
-            
         for i, chart in enumerate(flowcharts):
-            st.markdown(f"### {chart.get('title', f'Map {i+1}')}")
-            raw_code = chart.get('dot_code', '')
+            st.markdown(f"### {chart.get('title', f'Diagram Matrix {i+1}')}")
+            raw_code = chart.get('code', '')
             
             if raw_code:
-                # Security pass to ensure Graphviz handles quotes properly
                 safe_code = raw_code.replace("'", '"')
                 try:
                     st.graphviz_chart(safe_code)
                 except Exception:
-                    st.error("Graphviz rendering failed. See raw code below.")
+                    st.error("Graphviz abstraction error encountered during engine local parse routine.")
             
-            with st.expander("🛠️ View Raw DOT Code"):
+            with st.expander("🛠️ View Raw DOT Mapping Script"):
                 st.code(raw_code, language="dot")
             st.markdown("---")
 
-    # --- CURRENT AFFAIRS ---
+    # --- VIEW 4: CURRENT AFFAIRS ---
     elif view == "📰 Current Affairs":
-        st.subheader("Syllabus Linkages")
-        for news in db.get('recent_news', []):
+        st.subheader("Dynamic Contemporary Case Integration")
+        for news in db.get('current_affairs', []):
             with st.expander(f"📌 {news.get('headline')} | {news.get('gs_paper')}", expanded=True):
-                st.write(f"**Relevance:** {news.get('relevance')}")
+                st.write(f"**Relevance Architecture:** {news.get('relevance')}")
+                st.write(f"**Operational Real-World Impact:** {news.get('impact', '')}")
 
-    # --- PRELIMS SIMULATOR ---
+    # --- VIEW 5: PRELIMS ASSESSMENT ---
     elif view == "🎯 Prelims (15 Qs)":
-        st.subheader("Active Recall Assessment")
-        mcqs = db.get('prelims_mcqs', [])
-        st.caption(f"Loaded {len(mcqs)} Targets")
+        st.subheader("Active Recall Optimization Engine")
+        mcqs = db.get('prelims', [])
+        st.caption(f"Active Parameter Pool: Verified {len(mcqs)} Operational Problems")
         
         for i, mcq in enumerate(mcqs):
-            st.markdown(f"**Q{i+1}: {mcq.get('question')}**")
-            correct = mcq.get('correct_answer', '')
-            choice = st.radio("Select:", mcq.get('options', []), key=f"q_{i}", index=None, label_visibility="collapsed")
+            st.markdown(f"**Q{i+1}: {mcq.get('q')}**")
+            correct = mcq.get('answer', '')
             
-            if st.button("Check Answer", key=f"btn_{i}"):
+            # FIXED: Dynamic topic_id string attached to eliminate crossover choice bleed bugs across runtime sessions
+            choice = st.radio("Select Target Option Vector:", mcq.get('options', []), key=f"q_{topic_id}_{i}", index=None, label_visibility="collapsed")
+            
+            if st.button("Submit Choice Matrix Verification", key=f"btn_{topic_id}_{i}"):
                 if choice == correct:
-                    st.success(f"🎯 CORRECT! {correct}")
+                    st.success(f"🎯 ANALYSIS CONFIRMED: Target choice matches system standard: {correct}")
                 elif not choice:
-                    st.warning("Please make a selection.")
+                    st.warning("Input parameter verification missing. Select an alternate option.")
                 else:
-                    st.error(f"❌ INCORRECT. Answer: {correct}")
-                st.info(f"**Analysis:** {mcq.get('short_explanation')}")
+                    st.error(f"❌ COMPLIANCE DEFICIT: Evaluated selection faulty. System baseline: {correct}")
+                st.info(f"**Explanatory Framework Trace:** {mcq.get('explanation')}")
             st.markdown("---")
 
-    # --- MAINS LAB ---
+    # --- VIEW 6: MAINS LAB ---
     elif view == "✍️ Mains Lab (10 Qs)":
-        st.subheader("AI-Assisted Drafting")
-        questions = db.get('mains_questions', [])
-        st.caption(f"Loaded {len(questions)} Analytical Prompts")
+        st.subheader("Analytical Essay Verification Terminal")
+        questions = db.get('mains', [])
+        st.caption(f"Active Parameter Pool: Verified {len(questions)} Core Compositions")
         
         if questions:
-            active_q = st.selectbox("Select Prompt:", questions)
+            active_q = st.selectbox("Select Target Question Prompt Profile:", questions)
             
-            # Reset workspace on question change
             if 'last_q' not in st.session_state or st.session_state.last_q != active_q:
                 st.session_state.last_q = active_q
                 st.session_state.draft_text = ""
                 st.session_state.pop('mains_grade', None)
 
-            st.write(f"**Mission:** {active_q}")
-            draft = st.text_area("Workspace:", height=250, key="draft_text")
+            st.write(f"**Core Prompt Matrix:** {active_q}")
+            draft = st.text_area("Input Composition Drafting Board Workspace:", height=250, key="draft_text")
             
             def clear_memory():
                 st.session_state.draft_text = ""
@@ -292,27 +293,31 @@ else:
 
             c1, c2 = st.columns([1, 1])
             with c1: 
-                submit = st.button("Grade via 2.5-Flash")
+                submit = st.button("Initialize Script Verification Parsing")
             with c2: 
-                st.button("Clear Workspace", on_click=clear_memory)
+                st.button("Clear Input Workspace Space", on_click=clear_memory)
 
             if submit:
                 if len(draft.split()) < 30:
-                    st.error("Draft is too short for formal assessment.")
+                    st.error("Text content metrics display insufficient density parameters to run profile comparison scans.")
                 else:
-                    with st.spinner("Analyzing parameters..."):
-                        grade_report = grade_answer(active_q, draft)
-                        if grade_report:
-                            st.session_state.mains_grade = grade_report
+                    with st.spinner("Extracting stylistic features and structuring core parameters..."):
+                        raw_eval = grade_answer(active_q, draft)
+                        if raw_eval:
+                            try:
+                                parsed_eval = repair_and_load_json(raw_eval)
+                                st.session_state.mains_grade = parsed_eval
+                            except Exception:
+                                st.error("Failed to map structure array sequence during analysis run.")
 
             if 'mains_grade' in st.session_state:
                 gr = st.session_state.mains_grade
                 st.markdown("---")
-                st.metric("Indicative Score", gr.get('marks_out_of_15', 'N/A'))
+                st.metric("Indicative Quality Profile Rating", gr.get('marks', 'N/A'))
                 
-                st.info(f"**Intro:** {gr.get('introduction_feedback')}\n\n**Body:** {gr.get('body_feedback')}\n\n**Conclusion:** {gr.get('conclusion_feedback')}")
-                st.success("**Strengths:**\n" + "\n".join([f"- {s}" for s in gr.get('strengths', [])]))
-                st.warning("**Improvements:**\n" + "\n".join([f"- {i}" for i in gr.get('improvements', [])]))
+                st.info(f"**Structural Opening Mechanics:** {gr.get('intro')}\n\n**Body Parameter Balancing:** {gr.get('body')}\n\n**Forward Terminal Optimization:** {gr.get('conclusion')}")
+                st.success("**Validated Functional Strengths:**\n" + "\n".join([f"- {s}" for s in gr.get('strengths', [])]))
+                st.warning("**Identified Critical Performance Gaps:**\n" + "\n".join([f"- {i}" for i in gr.get('improvements', [])]))
                 
-                with st.expander("📘 Read Model Framework"):
+                with st.expander("📘 Review Baseline Solution Structural Blueprint Model"):
                     st.write(gr.get('ideal_framework'))
