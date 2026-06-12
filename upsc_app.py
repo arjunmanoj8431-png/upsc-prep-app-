@@ -53,7 +53,7 @@ else:
 # 3. AI Generation Engines
 # ---------------------------------------------------------
 def fetch_dashboard_data(topic):
-    model = genai.GenerativeModel('gemini-2.6-flash')
+    model = genai.GenerativeModel('gemini-2.5-flash')
     
     prompt = f"""
     You are an elite UPSC tutor. Generate a study dashboard for: "{topic}".
