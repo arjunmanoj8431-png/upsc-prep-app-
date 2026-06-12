@@ -10,6 +10,7 @@ st.set_page_config(page_title="UPSC AI Pro Dashboard", layout="wide", page_icon=
 
 st.markdown("""
     <style>
+    /* Animated Gradient Buttons */
     .stButton>button {
         background: linear-gradient(135deg, #FF416C 0%, #FF4B2B 100%);
         color: white !important;
@@ -24,6 +25,8 @@ st.markdown("""
         transform: translateY(-3px) scale(1.05);
         box-shadow: 0 8px 25px rgba(255, 75, 43, 0.6);
     }
+    
+    /* Vibrant Headings that adapt to any background */
     h1, h2, h3 {
         background: -webkit-linear-gradient(45deg, #00b4db, #0083b0);
         -webkit-background-clip: text;
@@ -31,30 +34,40 @@ st.markdown("""
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         font-weight: 800;
     }
+    
+    /* Card-like Info Boxes */
     div.stAlert {
         border-radius: 15px !important;
         border-left: 5px solid #26D0CE !important;
         box-shadow: 0 4px 10px rgba(0,0,0,0.1) !important;
     }
+    
+    /* --- SIDEBAR FIXES --- */
     [data-testid="stSidebar"] {
         background: linear-gradient(to bottom, #141E30, #243B55) !important;
     }
+    
+    /* Make static sidebar text white */
     [data-testid="stSidebar"] p, 
     [data-testid="stSidebar"] label, 
     [data-testid="stSidebar"] h2 { 
         color: #ffffff !important; 
     }
+    
+    /* --- THE ULTIMATE SEARCH BOX FIX --- */
     .stTextInput div[data-baseweb="base-input"] {
         background-color: #ffffff !important;
         border: 2px solid #26D0CE !important;
         border-radius: 8px !important;
     }
+    
     .stTextInput input {
         color: #000000 !important;
         -webkit-text-fill-color: #000000 !important;
         caret-color: #000000 !important;
         font-weight: 600 !important;
     }
+    
     .stTextInput input::placeholder {
         color: #666666 !important;
         -webkit-text-fill-color: #666666 !important;
@@ -77,13 +90,13 @@ def fetch_topic_data_from_ai(topic):
     model = genai.GenerativeModel('gemini-2.5-flash')
     
     prompt = f"""
-    You are an elite UPSC tutor. Generate a deep-dive study dashboard for: "{topic}".
+    You are an elite UPSC and Agricultural Extension tutor. Generate a deep-dive study dashboard for: "{topic}".
     
     CRITICAL INSTRUCTIONS:
     1. EXPLANATION: 3 paragraphs max. Be hyper-concise.
     2. ONE-PAGER: 5-pillar summary. Brief bullet points.
-    3. FLOWCHARTS: EXACTLY 5 Graphviz DOT flowcharts (rankdir=TB). DO NOT use double quotes inside the DOT code strings. Use single quotes if necessary.
-    4. CURRENT AFFAIRS: EXACTLY 3 recent news developments.
+    3. FLOWCHARTS: EXACTLY 5 Graphviz DOT flowcharts (rankdir=TB). DO NOT use double quotes inside the DOT code strings. Use single quotes if necessary. Keep node labels brief.
+    4. CURRENT AFFAIRS: EXACTLY 3 recent news developments mapped to GS Papers.
     5. PRELIMS: EXACTLY 15 high-difficulty MCQs. (Keep options short. Explanations MUST be under 15 words).
     6. MAINS: EXACTLY 10 analytical Mains questions.
     
@@ -130,7 +143,6 @@ def fetch_topic_data_from_ai(topic):
     """
     
     try:
-        # NATIVE JSON ENFORCEMENT ADDED HERE
         response = model.generate_content(
             prompt,
             generation_config={
@@ -139,10 +151,8 @@ def fetch_topic_data_from_ai(topic):
                 "response_mime_type": "application/json" 
             }
         )
-        # Because we forced application/json, we no longer need clunky string parsing
         return json.loads(response.text)
     except Exception as e:
-        # We will print the exact debug error to the screen so we can see if it fails again
         st.error(f"System Debug Error: {e}")
         return None
 
@@ -155,7 +165,7 @@ def evaluate_mains_answer(question, user_answer):
     Question: {question}
     Candidate's Answer: {user_answer}
     
-    Critique this response rigorously under exact UPSC standards out of a maximum of 15 marks. Be objective.
+    Critique this response rigorously under exact UPSC standards out of a maximum of 15 marks. Be objective. Real examiners rarely award above 9/15 unless the answer is masterfully multi-dimensional.
     
     Structure exactly:
     {{
@@ -197,5 +207,203 @@ if st.sidebar.button("🚀 Launch AI Engine"):
                 st.session_state.current_data = fresh_data
                 if 'active_evaluation' in st.session_state:
                     del st.session_state.active_evaluation
-                st.toast
+                st.toast("Dashboard successfully generated!", icon="✅")
+            else:
+                st.sidebar.error("Data generation failed. Please check your API quota or the System Debug Error above.")
+    else:
+        st.sidebar.warning("Please enter a topic first.")
+
+st.sidebar.markdown("---")
+page = st.sidebar.radio(
+    "📂 Navigation Menu",
+    ["📖 In-Depth Explanation", 
+     "⚡ 5-Pillar Cheat Sheet", 
+     "🎨 Visual Maps (5 Flowcharts)", 
+     "📰 GS Current Affairs",
+     "🎯 Prelims Combat (15 MCQs)", 
+     "✍️ Mains Masterclass (10 Qs)"]
+)
+
+# ---------------------------------------------------------
+# UI: Main Content Area
+# ---------------------------------------------------------
+if 'current_data' not in st.session_state or st.session_state.current_data is None:
+    st.markdown("<h1 style='text-align: center; margin-top: 10vh;'>Welcome to the Future of Exam Prep 🚀</h1>", unsafe_allow_html=True)
+    st.info("👈 Type a topic into the sidebar and launch the AI to generate a completely fresh, un-cached dashboard.")
+else:
+    data = st.session_state.current_data
+    st.header(f"📌 {data.get('title', 'Target Dashboard')}")
+    st.markdown("---")
+    
+    # --- PAGE 1: EXPLANATION ---
+    if page == "📖 In-Depth Explanation":
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.markdown(data.get('explanation', 'No explanation data found.'))
+        with col2:
+            st.warning("🔥 **Core Targets**")
+            for item in data.get('important_topics', []):
+                st.markdown(f"- {item}")
+
+    # --- PAGE 2: 5-PILLAR CHEAT SHEET ---
+    elif page == "⚡ 5-Pillar Cheat Sheet":
+        st.subheader("High-Density Strategic Revision")
+        one_pager = data.get('one_pager', {})
+        if one_pager:
+            cols = st.columns(2)
+            for i, (key, value) in enumerate(one_pager.items()):
+                with cols[i % 2]:
+                    formatted_title = key.replace('_', ' ')
+                    st.info(f"### {formatted_title}\n\n{value}")
+        else:
+            st.write("No cheat sheet data generated.")
+
+    # --- PAGE 3: 5 FLOWCHARTS ---
+    elif page == "🎨 Visual Maps (5 Flowcharts)":
+        st.subheader("Process, Mechanism & Impact Maps")
+        flowcharts = data.get('flowcharts', [])
+        
+        if not flowcharts:
+            st.info("No flowcharts generated.")
+        else:
+            tabs = st.tabs([fc.get('title', f"Map {i+1}") for i, fc in enumerate(flowcharts)])
+            for i, tab in enumerate(tabs):
+                with tab:
+                    fc_code = flowcharts[i].get('code', '')
+                    if "digraph" in fc_code:
+                        try:
+                            st.graphviz_chart(fc_code)
+                        except Exception:
+                            st.error("The AI generated invalid Graphviz syntax for this map.")
+                    else:
+                        st.warning("Diagram code missing.")
+                        
+    # --- PAGE 4: CURRENT AFFAIRS ---
+    elif page == "📰 GS Current Affairs":
+        st.subheader("Recent Developments & GS Paper Linkages")
+        ca_data = data.get('current_affairs', [])
+        
+        if not ca_data:
+            st.info("No current affairs linkages generated for this topic.")
+        else:
+            for item in ca_data:
+                with st.expander(f"📌 **{item.get('headline', 'Headline')}** | {item.get('gs_paper', 'GS Paper')}", expanded=True):
+                    st.markdown(f"**Relevance to Syllabus:** {item.get('relevance', '')}")
+                    st.markdown(f"**Recent Impact / Context:** {item.get('impact', '')}")
+
+    # --- PAGE 5: 15 PRELIMS MCQS ---
+    elif page == "🎯 Prelims Combat (15 MCQs)":
+        st.subheader("Interactive Active Recall Simulator")
+        prelims_qs = data.get('pyq_prelims', [])
+        
+        if not prelims_qs:
+            st.info("No Prelims data available.")
+        else:
+            st.caption(f"Loaded {len(prelims_qs)} targets for this session.")
+            for i, pyq in enumerate(prelims_qs):
+                with st.container():
+                    st.markdown(f"**Q{i+1} ({pyq.get('year', 'Simulated')}): {pyq.get('q')}**")
+                    options = pyq.get('options', [])
+                    ans = pyq.get('answer', '')
+                    
+                    if options:
+                        user_choice = st.radio("Select:", options, key=f"radio_{i}", index=None, label_visibility="collapsed")
+                        
+                        if st.button("Check Answer", key=f"btn_{i}"):
+                            if user_choice == ans:
+                                st.success(f"🎯 CORRECT! The answer is {ans}")
+                                st.balloons()
+                            elif user_choice is None:
+                                st.warning("Please select an option before checking.")
+                            else:
+                                st.error(f"❌ INCORRECT. The valid target is: {ans}")
+                            if pyq.get('explanation'):
+                                st.info(f"**Analysis:** {pyq.get('explanation')}")
+                    st.markdown("---")
+
+    # --- PAGE 6: 10 MAINS QUESTIONS WITH ACTIVE AI GRADING ---
+    elif page == "✍️ Mains Masterclass (10 Qs)":
+        st.subheader("Mains Answer Writing & AI Evaluation Lab")
+        questions = [q['q'] for q in data.get('pyq_mains', []) if 'q' in q]
+        
+        if questions:
+            st.caption(f"Loaded {len(questions)} analytical questions.")
+            selected_q = st.selectbox("Select your target question to attempt:", questions)
+            
+            if 'eval_question_track' not in st.session_state or st.session_state.eval_question_track != selected_q:
+                st.session_state.eval_question_track = selected_q
+                st.session_state.mains_text_input_area = ""
+                if 'active_evaluation' in st.session_state:
+                    del st.session_state.active_evaluation
+
+            st.markdown(f"**Mission Prompt:** *{selected_q}*")
+            
+            answer_text = st.text_area(
+                "Write or refine your draft answer below (Aim for 150 - 250 words):", 
+                height=300, 
+                placeholder="Begin structuring your response with a strong introduction...",
+                key="mains_text_input_area"
+            )
+            
+            word_count = len(answer_text.split())
+            st.progress(min(word_count / 250, 1.0))
+            st.caption(f"Current Word Count: **{word_count}** / 250 maximum benchmark")
+            
+            # Callback Function to safely wipe the workspace WITHOUT causing errors
+            def clear_workspace():
+                st.session_state.mains_text_input_area = ""
+                if 'active_evaluation' in st.session_state:
+                    del st.session_state.active_evaluation
+
+            col_actions_1, col_actions_2 = st.columns([1, 4])
+            with col_actions_1:
+                submit_clicked = st.button("Submit for AI Evaluation")
+            with col_actions_2:
+                st.button("Clear Answer Workspace", on_click=clear_workspace)
+
+            if submit_clicked:
+                if word_count < 40:
+                    st.error("Your draft is too brief to undergo standard civil services criteria evaluation. Expand your structural framework.")
+                else:
+                    with st.spinner("🔍 Reviewing structural paradigms, facts coverage, and assigning marks..."):
+                        evaluation_result = evaluate_mains_answer(selected_q, answer_text)
+                        if evaluation_result:
+                            st.session_state.active_evaluation = evaluation_result
+                        else:
+                            st.error("Evaluation engine timeout or formatting collision. Please re-trigger the verification.")
+
+            if 'active_evaluation' in st.session_state and st.session_state.active_evaluation:
+                eval_data = st.session_state.active_evaluation
+                st.markdown("---")
+                st.subheader("🎯 Evaluation Dashboard Results")
+                
+                metric_col, structural_col = st.columns([1, 3])
+                with metric_col:
+                    st.metric(label="Indicative Score Allocated", value=eval_data.get('marks_allocated', 'N/A'))
+                    st.caption("⚠️ *AI scores are strictly indicative evaluation guidelines. Always verify crucial data points and official case laws against primary reference sources.*")
+                    
+                with structural_col:
+                    st.info(f"**Structural Blueprint Feedback**")
+                    st.markdown(f"**1. Introduction Contextualization:**\n{eval_data.get('intro_critique', '')}")
+                    st.markdown(f"**2. Body Analysis & Multi-Dimensional Data Coverage:**\n{eval_data.get('body_critique', '')}")
+                    st.markdown(f"**3. Conclusion & Forward-Looking Policy Framework Alignment:**\n{eval_data.get('conclusion_critique', '')}")
+                
+                st.markdown("---")
+                st_col_left, st_col_right = st.columns(2)
+                with st_col_left:
+                    st.success("### ⭐ Structural Strengths Captured")
+                    for strength in eval_data.get('explicit_strengths', []):
+                        st.markdown(f"- {strength}")
+                with st_col_right:
+                    st.warning("### 📈 Core Actions to Earn +2 Marks")
+                    for improvement in eval_data.get('critical_improvements', []):
+                        st.markdown(f"- {improvement}")
+                
+                st.markdown("---")
+                with st.expander("📘 Review Optimal Model Baseline Framework"):
+                    st.markdown(eval_data.get('model_approach', 'Model blueprint text not generated.'))
+                    
+                st.success("📝 **Feedback Processed.** You can edit your text in the workspace box above right now to adjust parameters and hit 'Submit for AI Evaluation' again to track your adjusted score timeline!")
+        else:
+            st.info("No Mains structural questions available.")
     
