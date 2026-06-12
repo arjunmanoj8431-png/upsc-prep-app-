@@ -89,16 +89,17 @@ else:
 def fetch_topic_data_from_ai(topic):
     model = genai.GenerativeModel('gemini-2.5-flash')
     
+    # We added instructions to be DENSE and CONCISE to fit the 15-question quota into the token limit
     prompt = f"""
     You are an elite UPSC tutor. Generate a massive, deep-dive study dashboard for: "{topic}".
     
-    CRITICAL INSTRUCTIONS TO AVOID ERRORS:
-    1. EXPLANATION: 6+ detailed paragraphs.
-    2. ONE-PAGER: Must be a 5-pillar strategic summary using the exact keys below.
-    3. FLOWCHARTS: Generate EXACTLY 5 Graphviz DOT flowcharts. They MUST use rankdir=TB for a vertical layout.
-    4. CURRENT AFFAIRS: Generate EXACTLY 3-5 recent news developments mapped to specific GS Papers.
-    5. PRELIMS: Generate EXACTLY 15 high-difficulty MCQs.
-    6. MAINS: Generate EXACTLY 15 analytical Mains questions.
+    CRITICAL INSTRUCTIONS TO AVOID TRUNCATION LIMITS:
+    1. EXPLANATION: 4-5 dense paragraphs. Keep it strictly conceptual.
+    2. ONE-PAGER: 5-pillar strategic summary using bullet points to save tokens.
+    3. FLOWCHARTS: EXACTLY 5 Graphviz DOT flowcharts (rankdir=TB). Keep node labels brief.
+    4. CURRENT AFFAIRS: 3 recent news developments mapped to GS Papers.
+    5. PRELIMS: EXACTLY 15 high-difficulty MCQs. Keep explanations to 1 strict sentence.
+    6. MAINS: EXACTLY 15 analytical Mains questions.
     
     Respond ONLY with a valid JSON object. Do not include markdown code blocks like ```json.
     
@@ -145,7 +146,11 @@ def fetch_topic_data_from_ai(topic):
     """
     
     try:
-        response = model.generate_content(prompt)
+        # FORCING THE MAXIMUM TOKEN LIMIT
+        response = model.generate_content(
+            prompt,
+            generation_config={"max_output_tokens": 8192, "temperature": 0.2}
+        )
         raw_text = response.text.strip()
         start_index = raw_text.find('{')
         end_index = raw_text.rfind('}')
@@ -179,7 +184,10 @@ def evaluate_mains_answer(question, user_answer):
     }}
     """
     try:
-        response = model.generate_content(prompt)
+        response = model.generate_content(
+            prompt,
+            generation_config={"temperature": 0.1}
+        )
         raw_text = response.text.strip()
         start = raw_text.find('{')
         end = raw_text.rfind('}')
@@ -203,12 +211,11 @@ if st.sidebar.button("🚀 Launch AI Engine"):
             fresh_data = fetch_topic_data_from_ai(search_query)
             if fresh_data:
                 st.session_state.current_data = fresh_data
-                # Reset old answer evaluations when a new topic is loaded
                 if 'active_evaluation' in st.session_state:
                     del st.session_state.active_evaluation
                 st.toast("Dashboard successfully generated!", icon="✅")
             else:
-                st.sidebar.error("Data generation failed due to size limits. Try again.")
+                st.sidebar.error("Data generation failed due to size limits. Try again or search a slightly narrower topic.")
     else:
         st.sidebar.warning("Please enter a topic first.")
 
@@ -329,16 +336,14 @@ else:
             st.caption(f"Loaded {len(questions)} analytical questions.")
             selected_q = st.selectbox("Select your target question to attempt:", questions)
             
-            # Wipe evaluation and text area clear if student changes the active question drop-down
             if 'eval_question_track' not in st.session_state or st.session_state.eval_question_track != selected_q:
                 st.session_state.eval_question_track = selected_q
-                st.session_state.mains_text_input_area = ""  # Legal modification before widget renders
+                st.session_state.mains_text_input_area = ""
                 if 'active_evaluation' in st.session_state:
                     del st.session_state.active_evaluation
 
             st.markdown(f"**Mission Prompt:** *{selected_q}*")
             
-            # Interactive Answer Workspace
             answer_text = st.text_area(
                 "Write or refine your draft answer below (Aim for 150 - 250 words):", 
                 height=300, 
@@ -350,7 +355,6 @@ else:
             st.progress(min(word_count / 250, 1.0))
             st.caption(f"Current Word Count: **{word_count}** / 250 maximum benchmark")
             
-            # Callback Function to safely wipe the workspace WITHOUT causing the StreamlitAPIException
             def clear_workspace():
                 st.session_state.mains_text_input_area = ""
                 if 'active_evaluation' in st.session_state:
@@ -373,7 +377,6 @@ else:
                         else:
                             st.error("Evaluation engine timeout or formatting collision. Please re-trigger the verification.")
 
-            # Display saved active grading assessment matrix
             if 'active_evaluation' in st.session_state and st.session_state.active_evaluation:
                 eval_data = st.session_state.active_evaluation
                 st.markdown("---")
