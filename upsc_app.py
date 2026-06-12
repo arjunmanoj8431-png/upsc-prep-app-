@@ -55,14 +55,12 @@ st.markdown("""
     }
     
     /* --- THE ULTIMATE SEARCH BOX FIX --- */
-    /* Target the text input component globally to enforce a white box */
     .stTextInput div[data-baseweb="base-input"] {
         background-color: #ffffff !important;
         border: 2px solid #26D0CE !important;
         border-radius: 8px !important;
     }
     
-    /* Force typed text and the blinking cursor to be black in ALL modes */
     .stTextInput input {
         color: #000000 !important;
         -webkit-text-fill-color: #000000 !important;
@@ -70,7 +68,6 @@ st.markdown("""
         font-weight: 600 !important;
     }
     
-    /* Force placeholder text to be a visible grey */
     .stTextInput input::placeholder {
         color: #666666 !important;
         -webkit-text-fill-color: #666666 !important;
@@ -98,9 +95,10 @@ def fetch_topic_data_from_ai(topic):
     CRITICAL INSTRUCTIONS TO AVOID ERRORS:
     1. EXPLANATION: 6+ detailed paragraphs.
     2. ONE-PAGER: Must be a 5-pillar strategic summary using the exact keys below.
-    3. FLOWCHARTS: Generate EXACTLY 5 Graphviz DOT flowcharts covering different angles. They MUST use rankdir=TB for a vertical layout.
-    4. PRELIMS: Generate EXACTLY 15 high-difficulty MCQs.
-    5. MAINS: Generate EXACTLY 15 analytical Mains questions.
+    3. FLOWCHARTS: Generate EXACTLY 5 Graphviz DOT flowcharts. They MUST use rankdir=TB for a vertical layout.
+    4. CURRENT AFFAIRS: Generate EXACTLY 3-5 recent news developments mapped to specific GS Papers.
+    5. PRELIMS: Generate EXACTLY 15 high-difficulty MCQs.
+    6. MAINS: Generate EXACTLY 15 analytical Mains questions.
     
     Respond ONLY with a valid JSON object. Do not include markdown code blocks like ```json.
     
@@ -122,6 +120,14 @@ def fetch_topic_data_from_ai(topic):
             {{"title": "3. Institutional Setup", "code": "digraph G {{ rankdir=TB; node [shape=box, style=filled, fillcolor=lightgreen]; A -> B; }}"}},
             {{"title": "4. Impact Analysis", "code": "digraph G {{ rankdir=TB; node [shape=box, style=filled, fillcolor=lightgrey]; A -> B; }}"}},
             {{"title": "5. Way Forward Strategy", "code": "digraph G {{ rankdir=TB; node [shape=box, style=filled, fillcolor=lightpink]; A -> B; }}"}}
+        ],
+        "current_affairs": [
+            {{
+                "gs_paper": "GS Paper 3",
+                "headline": "Recent Headline related to topic...",
+                "relevance": "How this connects to the static syllabus...",
+                "impact": "The real-world implications or recent updates..."
+            }}
         ],
         "pyq_prelims": [
             {{
@@ -162,7 +168,7 @@ search_query = st.sidebar.text_input("🔍 Enter Syllabus Topic:", placeholder="
 
 if st.sidebar.button("🚀 Launch AI Engine"):
     if search_query:
-        with st.spinner("⚡ Forging deep-dive dashboard (Generating 30+ Qs & 5 Maps)..."):
+        with st.spinner("⚡ Forging deep-dive dashboard (Generating 30+ Qs & Maps)..."):
             fresh_data = fetch_topic_data_from_ai(search_query)
             if fresh_data:
                 st.session_state.current_data = fresh_data
@@ -178,6 +184,7 @@ page = st.sidebar.radio(
     ["📖 In-Depth Explanation", 
      "⚡ 5-Pillar Cheat Sheet", 
      "🎨 Visual Maps (5 Flowcharts)", 
+     "📰 GS Current Affairs",
      "🎯 Prelims Combat (15 MCQs)", 
      "✍️ Mains Masterclass (15 Qs)"]
 )
@@ -235,8 +242,21 @@ else:
                             st.error("The AI generated invalid Graphviz syntax for this map.")
                     else:
                         st.warning("Diagram code missing.")
+                        
+    # --- PAGE 4: CURRENT AFFAIRS ---
+    elif page == "📰 GS Current Affairs":
+        st.subheader("Recent Developments & GS Paper Linkages")
+        ca_data = data.get('current_affairs', [])
+        
+        if not ca_data:
+            st.info("No current affairs linkages generated for this topic.")
+        else:
+            for item in ca_data:
+                with st.expander(f"📌 **{item.get('headline', 'Headline')}** | {item.get('gs_paper', 'GS Paper')}", expanded=True):
+                    st.markdown(f"**Relevance to Syllabus:** {item.get('relevance', '')}")
+                    st.markdown(f"**Recent Impact / Context:** {item.get('impact', '')}")
 
-    # --- PAGE 4: 15 PRELIMS MCQS ---
+    # --- PAGE 5: 15 PRELIMS MCQS ---
     elif page == "🎯 Prelims Combat (15 MCQs)":
         st.subheader("Interactive Active Recall Simulator")
         prelims_qs = data.get('pyq_prelims', [])
@@ -266,7 +286,7 @@ else:
                                 st.info(f"**Analysis:** {pyq.get('explanation')}")
                     st.markdown("---")
 
-    # --- PAGE 5: 15 MAINS QUESTIONS ---
+    # --- PAGE 6: 15 MAINS QUESTIONS ---
     elif page == "✍️ Mains Masterclass (15 Qs)":
         st.subheader("Mains Answer Draft Simulator")
         questions = [q['q'] for q in data.get('pyq_mains', []) if 'q' in q]
