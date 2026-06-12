@@ -329,9 +329,10 @@ else:
             st.caption(f"Loaded {len(questions)} analytical questions.")
             selected_q = st.selectbox("Select your target question to attempt:", questions)
             
-            # Wipe evaluation clear if student changes the active question drop-down
+            # Wipe evaluation and text area clear if student changes the active question drop-down
             if 'eval_question_track' not in st.session_state or st.session_state.eval_question_track != selected_q:
                 st.session_state.eval_question_track = selected_q
+                st.session_state.mains_text_input_area = ""  # Legal modification before widget renders
                 if 'active_evaluation' in st.session_state:
                     del st.session_state.active_evaluation
 
@@ -349,15 +350,17 @@ else:
             st.progress(min(word_count / 250, 1.0))
             st.caption(f"Current Word Count: **{word_count}** / 250 maximum benchmark")
             
+            # Callback Function to safely wipe the workspace WITHOUT causing the StreamlitAPIException
+            def clear_workspace():
+                st.session_state.mains_text_input_area = ""
+                if 'active_evaluation' in st.session_state:
+                    del st.session_state.active_evaluation
+
             col_actions_1, col_actions_2 = st.columns([1, 4])
             with col_actions_1:
                 submit_clicked = st.button("Submit for AI Evaluation")
             with col_actions_2:
-                if st.button("Clear Answer Workspace"):
-                    st.session_state.mains_text_input_area = ""
-                    if 'active_evaluation' in st.session_state:
-                        del st.session_state.active_evaluation
-                    st.rerun()
+                st.button("Clear Answer Workspace", on_click=clear_workspace)
 
             if submit_clicked:
                 if word_count < 40:
