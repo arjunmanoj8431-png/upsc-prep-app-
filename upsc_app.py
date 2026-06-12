@@ -35,7 +35,7 @@ st.markdown("""
         font-weight: 800;
     }
     
-    /* Card-like Info Boxes (Background removed so it respects Light/Dark Mode natively) */
+    /* Card-like Info Boxes */
     div.stAlert {
         border-radius: 15px !important;
         border-left: 5px solid #26D0CE !important;
@@ -95,16 +95,4 @@ def fetch_topic_data_from_ai(topic):
     prompt = f"""
     You are an elite UPSC tutor. Generate a massive, deep-dive study dashboard for: "{topic}".
     
-    CRITICAL INSTRUCTIONS TO AVOID ERRORS:
-    1. EXPLANATION: 6+ detailed paragraphs.
-    2. ONE-PAGER: Must be a 5-pillar strategic summary using the exact keys below.
-    3. FLOWCHARTS: Generate EXACTLY 5 Graphviz DOT flowcharts covering different angles (Mechanism, History, Setup, Impact, Solutions).
-    4. PRELIMS: Generate EXACTLY 15 high-difficulty MCQs.
-    5. MAINS: Generate EXACTLY 15 analytical Mains questions.
-    
-    Respond ONLY with a valid JSON object. Do not include markdown code blocks like ```json.
-    
-    Structure exactly like this:
-    {{
-        "title": "Clear Topic Title",
-        "explanation": "Deep, conceptual explanation
+    CRITICAL IN
