@@ -101,8 +101,7 @@ def fetch_topic_data_from_ai(topic):
             {{"year": 2023, "q": "Question 1 text..."}}
             // MUST REPEAT THIS EXACT BLOCK 15 TIMES
         ]
-    }}
-    """
+     }}"""
     
     try:
         response = model.generate_content(prompt)
