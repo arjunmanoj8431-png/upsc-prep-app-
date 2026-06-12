@@ -42,7 +42,7 @@ st.markdown("""
         box-shadow: 0 4px 10px rgba(0,0,0,0.1) !important;
     }
     
-    /* --- SIDEBAR & DARK MODE FIXES --- */
+    /* --- SIDEBAR FIXES --- */
     [data-testid="stSidebar"] {
         background: linear-gradient(to bottom, #141E30, #243B55) !important;
     }
@@ -54,24 +54,24 @@ st.markdown("""
         color: #ffffff !important; 
     }
     
-    /* The absolute fix for the search input in Dark Mode */
-    div[data-baseweb="input"] {
+    /* --- THE ULTIMATE SEARCH BOX FIX --- */
+    /* Target the text input component globally to enforce a white box */
+    .stTextInput div[data-baseweb="base-input"] {
         background-color: #ffffff !important;
         border: 2px solid #26D0CE !important;
         border-radius: 8px !important;
     }
     
-    /* Override Streamlit's stubborn Webkit Dark Mode text colors and the blinking cursor */
-    div[data-baseweb="input"] input {
+    /* Force typed text and the blinking cursor to be black in ALL modes */
+    .stTextInput input {
         color: #000000 !important;
         -webkit-text-fill-color: #000000 !important;
         caret-color: #000000 !important;
-        background-color: transparent !important;
-        font-weight: 600;
+        font-weight: 600 !important;
     }
     
-    /* Ensure placeholder text is visible but distinct */
-    div[data-baseweb="input"] input::placeholder {
+    /* Force placeholder text to be a visible grey */
+    .stTextInput input::placeholder {
         color: #666666 !important;
         -webkit-text-fill-color: #666666 !important;
     }
@@ -98,7 +98,7 @@ def fetch_topic_data_from_ai(topic):
     CRITICAL INSTRUCTIONS TO AVOID ERRORS:
     1. EXPLANATION: 6+ detailed paragraphs.
     2. ONE-PAGER: Must be a 5-pillar strategic summary using the exact keys below.
-    3. FLOWCHARTS: Generate EXACTLY 5 Graphviz DOT flowcharts covering different angles (Mechanism, History, Setup, Impact, Solutions).
+    3. FLOWCHARTS: Generate EXACTLY 5 Graphviz DOT flowcharts covering different angles. They MUST use rankdir=TB for a vertical layout.
     4. PRELIMS: Generate EXACTLY 15 high-difficulty MCQs.
     5. MAINS: Generate EXACTLY 15 analytical Mains questions.
     
@@ -117,11 +117,11 @@ def fetch_topic_data_from_ai(topic):
             "Critical_Challenges_and_Solutions": "Detailed facts..."
         }},
         "flowcharts": [
-            {{"title": "1. Core Mechanism", "code": "digraph G {{ rankdir=LR; node [style=filled, fillcolor=lightblue]; A -> B; }}"}},
-            {{"title": "2. Historical Evolution", "code": "digraph G {{ A -> B; }}"}},
-            {{"title": "3. Institutional Setup", "code": "digraph G {{ A -> B; }}"}},
-            {{"title": "4. Impact Analysis", "code": "digraph G {{ A -> B; }}"}},
-            {{"title": "5. Way Forward Strategy", "code": "digraph G {{ A -> B; }}"}}
+            {{"title": "1. Core Mechanism", "code": "digraph G {{ rankdir=TB; node [shape=box, style=filled, fillcolor=lightblue]; A -> B; }}"}},
+            {{"title": "2. Historical Evolution", "code": "digraph G {{ rankdir=TB; node [shape=box, style=filled, fillcolor=lightyellow]; A -> B; }}"}},
+            {{"title": "3. Institutional Setup", "code": "digraph G {{ rankdir=TB; node [shape=box, style=filled, fillcolor=lightgreen]; A -> B; }}"}},
+            {{"title": "4. Impact Analysis", "code": "digraph G {{ rankdir=TB; node [shape=box, style=filled, fillcolor=lightgrey]; A -> B; }}"}},
+            {{"title": "5. Way Forward Strategy", "code": "digraph G {{ rankdir=TB; node [shape=box, style=filled, fillcolor=lightpink]; A -> B; }}"}}
         ],
         "pyq_prelims": [
             {{
@@ -158,7 +158,7 @@ def fetch_topic_data_from_ai(topic):
 st.sidebar.markdown("<h2 style='text-align: center; color: white;'>✨ UPSC Pro Dash</h2>", unsafe_allow_html=True)
 st.sidebar.markdown("---")
 
-search_query = st.sidebar.text_input("🔍 Enter Syllabus Topic:", placeholder="e.g., The Indian Monsoon")
+search_query = st.sidebar.text_input("🔍 Enter Syllabus Topic:", placeholder="e.g., Agricultural Entomology")
 
 if st.sidebar.button("🚀 Launch AI Engine"):
     if search_query:
