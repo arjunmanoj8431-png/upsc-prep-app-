@@ -1,322 +1,318 @@
 import streamlit as st
 import google.generativeai as genai
 import json
-import re
+from typing import List, TypedDict
 
 # ==============================================================================
-# 1. INTERFACE CONFIGURATION & RESPONSIVE UI STYLING
+# 1. PAGE SETUP & MOBILE-FIRST CSS
 # ==============================================================================
-st.set_page_config(page_title="UPSC AI Pro Dashboard", layout="centered", page_icon="🏛️")
+st.set_page_config(page_title="UPSC AI Pro", layout="centered", page_icon="🏛️")
 
 st.markdown("""
     <style>
-    /* Gradient Action Controls */
+    /* Gradient Buttons */
     .stButton>button { 
-        background: linear-gradient(135deg, #00B4DB 0%, #0083B0 100%); 
+        background: linear-gradient(135deg, #FF416C 0%, #FF4B2B 100%); 
         color: white !important; 
         border-radius: 10px; 
-        font-weight: 700; 
+        font-weight: 800; 
         width: 100%; 
-        border: none;
-        padding: 0.5rem;
+        padding: 0.6rem;
     }
-    .stButton>button:active { transform: scale(0.99); }
+    .stButton>button:hover { transform: scale(1.02); }
     
-    /* High-Contrast Search Input */
+    /* Theme-Agnostic Search Box */
     div[data-baseweb="input"] { 
         background-color: #ffffff !important; 
-        border: 2px solid #00B4DB !important; 
+        border: 2px solid #26D0CE !important; 
         border-radius: 8px !important; 
     }
     div[data-baseweb="input"] input { 
         color: #000000 !important; 
         -webkit-text-fill-color: #000000 !important; 
-        font-weight: 600 !important; 
+        font-weight: bold; 
+    }
+    div[data-baseweb="input"] input::placeholder {
+        color: #666666 !important;
+        -webkit-text-fill-color: #666666 !important;
     }
     
-    /* Typography Typography Styling */
+    /* Vibrant Headings */
     h1, h2, h3 { 
-        background: -webkit-linear-gradient(45deg, #FF416C, #FF4B2B); 
+        background: -webkit-linear-gradient(45deg, #00b4db, #0083b0); 
         -webkit-background-clip: text; 
         -webkit-text-fill-color: transparent; 
-        font-weight: 800; 
+        font-weight: 900; 
     }
     </style>
 """, unsafe_allow_html=True)
 
 # ==============================================================================
-# 2. CORE ENGINE INITIALIZATION
+# 2. STRICT TYPED SCHEMAS (GUARANTEES PERFECT JSON)
+# ==============================================================================
+class CheatSheetSchema(TypedDict):
+    constitutional_legal_basis: str
+    statistics_reports: str
+    keywords: str
+    current_affairs_context: str
+    challenges_solutions: str
+
+class FlowchartSchema(TypedDict):
+    title: str
+    dot_code: str
+
+class CurrentAffairsSchema(TypedDict):
+    gs_paper: str
+    headline: str
+    relevance: str
+
+class MCQSchema(TypedDict):
+    question: str
+    options: List[str]
+    correct_answer: str
+    short_explanation: str
+
+class DashboardSchema(TypedDict):
+    topic_title: str
+    core_explanation: str
+    important_subtopics: List[str]
+    cheat_sheet: CheatSheetSchema
+    flowcharts: List[FlowchartSchema]
+    recent_news: List[CurrentAffairsSchema]
+    prelims_mcqs: List[MCQSchema]
+    mains_questions: List[str]
+
+class GradingSchema(TypedDict):
+    marks_out_of_15: str
+    introduction_feedback: str
+    body_feedback: str
+    conclusion_feedback: str
+    strengths: List[str]
+    improvements: List[str]
+    ideal_framework: str
+
+# ==============================================================================
+# 3. API CONFIGURATION
 # ==============================================================================
 if "GEMINI_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 else:
-    genai.configure(api_key="YOUR_API_KEY_HERE")
+    genai.configure(api_key="YOUR_API_KEY_HERE") 
 
 # ==============================================================================
-# 3. JSON STREAM REPAIR ENGINE (ANTI-CRASH LAYER)
+# 4. GENERATION ENGINES (GEMINI 2.5 FLASH)
 # ==============================================================================
-def repair_and_load_json(raw_text: str):
-    """Sanitizes raw LLM string text to guarantee standard JSON compliance."""
-    # Clean out any accidental markdown code fence syntax
-    clean_text = raw_text.strip()
-    if clean_text.startswith("```json"):
-        clean_text = clean_text[7:]
-    if clean_text.startswith("```"):
-        clean_text = clean_text[3:]
-    if clean_text.endswith("```"):
-        clean_text = clean_text[:-3]
-    clean_text = clean_text.strip()
-    
-    # Fix unescaped control characters and newlines inside string parameters
-    def replace_newlines(match):
-        return match.group(0).replace('\n', '\\n').replace('\t', '\\t')
-    
-    # Locate all content enclosed within valid string quotes
-    string_pattern = re.compile(r'"([^"\\]|\\.)*"')
-    clean_text = string_pattern.sub(replace_newlines, clean_text)
-    
-    return json.loads(clean_text, strict=False)
-
-# ==============================================================================
-# 4. DATA GENERATION PIPELINE (GEMINI 2.5 FLASH)
-# ==============================================================================
-def execute_dashboard_generation(topic: str):
-    """Compiles whole core dashboard via structured JSON formatting configuration."""
+def forge_dashboard(topic: str):
+    """Generates the main dashboard using strict JSON Schema enforcement and massive data prompts."""
     model = genai.GenerativeModel('gemini-2.5-flash')
     
     prompt = f"""
-    You are an expert UPSC Civil Services exam curator. Produce an exhaustive learning architecture for: "{topic}".
+    You are an elite UPSC professor. Create a MASSIVE, highly detailed study dashboard for: "{topic}".
     
-    CRITICAL SYNTAX INSTRUCTIONS:
-    - You must return a single, highly structured JSON object.
-    - All text values must use escaped standard text line breaks ("\\n") instead of literal unescaped newlines.
+    You are constrained to a strict JSON schema. To satisfy the requirements, you MUST follow these volume constraints. DO NOT BE LAZY:
     
-    CRITICAL STRUCTURE INSTRUCTIONS:
-    - Provide EXACTLY 15 multiple-choice questions (MCQs) for Prelims.
-    - Provide EXACTLY 10 long-form analytical questions for Mains.
-    - For flowcharts, use simple Graphviz DOT syntax using standard double quotes for node definitions.
+    1. 'core_explanation': Write a comprehensive 3-to-4 paragraph deep-dive. DO NOT be brief.
+    2. 'flowcharts': You MUST generate EXACTLY 5 distinct flowcharts. Do not stop at 1.
+       - Map 1: Core Mechanism / Concept
+       - Map 2: Historical Context / Background
+       - Map 3: Institutional / Legal Setup
+       - Map 4: Impacts & Challenges
+       - Map 5: Strategic Way Forward
+    3. 'prelims_mcqs': You MUST generate EXACTLY 15 high-difficulty MCQs.
+    4. 'mains_questions': You MUST generate EXACTLY 10 analytical questions.
+    5. 'important_subtopics': Provide 5 to 7 high-yield subtopics.
+    6. 'recent_news': Provide exactly 3 current affairs developments.
+    7. 'cheat_sheet': Fill out every single key with a dense, detailed paragraph of information.
     
-    Strict JSON Target Schema Layout:
-    {{
-        "title": "Syllabus Module Title",
-        "brief_overview": "Comprehensive thematic explanation...",
-        "core_anchors": ["Anchor Point 1", "Anchor Point 2"],
-        "pillars": {{
-            "legal_constitutional": "Data context...",
-            "statistical_indices": "Data context...",
-            "conceptual_keywords": "Data context...",
-            "contemporary_context": "Data context...",
-            "bottlenecks_remedies": "Data context..."
-        }},
-        "diagrams": [
-            {{"title": "Flow Diagram 1", "dot": "digraph G {{ rankdir=TB; node [shape=box]; \\"A\\" -> \\"B\\"; }}"}}
-        ],
-        "current_linkages": [
-            {{"paper": "GS Paper X", "event": "Analysis detail..."}}
-        ],
-        "prelims_dataset": [
-            {{"question": "Q...", "choices": ["A", "B", "C", "D"], "correct": "A", "rationale": "..."}}
-        ],
-        "mains_dataset": [
-            "Mains Question 1...",
-            "Mains Question 2..."
-        ]
-    }}
+    For Graphviz DOT codes inside the flowcharts, use standard double quotes for your labels (e.g., node [label="Supreme Court"]). The JSON engine will automatically escape them.
     """
+    
     try:
         response = model.generate_content(
             prompt,
-            generation_config={
-                "max_output_tokens": 8192,
-                "temperature": 0.15,
-                "response_mime_type": "application/json"
-            }
+            generation_config=genai.GenerationConfig(
+                max_output_tokens=8192,
+                temperature=0.25,
+                response_mime_type="application/json",
+                response_schema=DashboardSchema
+            )
         )
-        return repair_and_load_json(response.text)
+        return json.loads(response.text)
     except Exception as e:
-        st.error(f"Critical System Exception: {e}")
+        st.error(f"Generation Engine Error: {e}")
         return None
 
-def execute_evaluation(mains_q: str, student_answer: str):
-    """Evaluates a handwritten mains transcript against a fixed criteria schema."""
+def grade_answer(question: str, answer: str):
+    """Grades the mains answer using strict JSON Schema enforcement."""
     model = genai.GenerativeModel('gemini-2.5-flash')
     
     prompt = f"""
-    Evaluate the following UPSC response out of 15 marks.
-    Question: {mains_q}
-    Student Answer: {student_answer}
-    
-    Return a structured JSON file conforming to:
-    {{
-        "score": "X/15",
-        "segment_analysis": "Detailed structure review...",
-        "positives": ["Point 1"],
-        "gaps": ["Point 1"],
-        "benchmark_blueprint": "Ideal solution framework..."
-    }}
+    Act as a strict UPSC examiner. Grade this out of 15 marks. Provide detailed feedback.
+    Question: {question}
+    Answer: {answer}
     """
+    
     try:
         response = model.generate_content(
             prompt,
-            generation_config={
-                "temperature": 0.1,
-                "response_mime_type": "application/json"
-            }
+            generation_config=genai.GenerationConfig(
+                temperature=0.1,
+                response_mime_type="application/json",
+                response_schema=GradingSchema
+            )
         )
-        return repair_and_load_json(response.text)
+        return json.loads(response.text)
     except Exception as e:
-        st.error(f"Evaluation Module Error: {e}")
+        st.error(f"Grading Engine Error: {e}")
         return None
 
 # ==============================================================================
-# 5. DESKTOP/MOBILE ROUTING AND APPLICATION CONTROLS
+# 5. UI ROUTING & STATE CONTROLS
 # ==============================================================================
 st.sidebar.markdown("<h2 style='text-align: center;'>✨ UPSC Pro Dash</h2>", unsafe_allow_html=True)
 
-target_topic = st.sidebar.text_input("🔍 Input Target Syllabus Topic:", placeholder="e.g., Left Wing Extremism")
+user_topic = st.sidebar.text_input("🔍 Enter Syllabus Topic:", placeholder="e.g., Monetary Policy")
 
-if st.sidebar.button("🚀 Execute Analytical Build"):
-    if target_topic:
-        with st.spinner("⚡ Synthesizing via Gemini 2.5 Flash Engine..."):
-            payload = execute_dashboard_generation(target_topic)
-            if payload:
-                st.session_state.active_payload = payload
-                st.session_state.pop('active_grading', None)
-                st.toast("Data Matrix Assembled Successfully!", icon="✅")
+if st.sidebar.button("🚀 Launch AI Engine"):
+    if user_topic:
+        with st.spinner("⚡ Forging massive dataset via Gemini 2.5 Flash (Takes ~10-15 seconds)..."):
+            new_data = forge_dashboard(user_topic)
+            if new_data:
+                st.session_state.app_data = new_data
+                st.session_state.pop('mains_grade', None) # Clear old grades
+                st.toast("Dashboard Ready!", icon="✅")
     else:
-        st.sidebar.warning("A specific syllabus parameter must be defined.")
+        st.sidebar.warning("Please enter a topic.")
 
 st.sidebar.markdown("---")
-selected_view = st.sidebar.radio(
-    "📂 Active Terminal Layout",
-    ["📖 Knowledge Matrix", "⚡ 5-Pillar Matrix", "🎨 Graphviz Flowcharts", "📰 GS Linkages", "🎯 Prelims Simulator (15)", "✍️ Mains Lab (10)"]
+view = st.sidebar.radio(
+    "📂 Modules",
+    ["📖 Core Concepts", "⚡ 5-Pillar Cheat Sheet", "🎨 Flowcharts", "📰 Current Affairs", "🎯 Prelims (15 Qs)", "✍️ Mains Lab (10 Qs)"]
 )
 
 # ==============================================================================
-# 6. STRUCTURAL INTERFACE CONTENT GENERATION
+# 6. MAIN CONTENT RENDERING
 # ==============================================================================
-if 'active_payload' not in st.session_state or not st.session_state.active_payload:
-    st.markdown("<h2 style='text-align: center; margin-top: 15vh;'>System Ready. 🚀</h2>", unsafe_allow_html=True)
-    st.info("👈 Please define an educational vector in the control panel to engage the 2.5-Flash pipeline.")
+if 'app_data' not in st.session_state or not st.session_state.app_data:
+    st.markdown("<h2 style='text-align: center; margin-top: 10vh;'>System Ready. 🚀</h2>", unsafe_allow_html=True)
+    st.info("👈 Enter a topic in the sidebar and launch the engine. The AI will output deep, structured data without crashing.")
 else:
-    core_data = st.session_state.active_payload
-    st.header(f"📌 Module: {core_data.get('title', 'Active Workspace')}")
+    db = st.session_state.app_data
+    st.header(f"📌 {db.get('topic_title', 'Dashboard')}")
     st.markdown("---")
 
-    # --- TERMINAL 1: KNOWLEDGE MATRIX ---
-    if selected_view == "📖 Knowledge Matrix":
-        st.markdown(core_data.get('brief_overview', 'Information unavailable.'))
-        st.warning("🔥 **High-Priority Analytical Concepts**")
-        for anchor in core_data.get('core_anchors', []):
-            st.markdown(f"- {anchor}")
+    # --- CORE CONCEPTS ---
+    if view == "📖 Core Concepts":
+        st.markdown(db.get('core_explanation', 'No explanation provided.'))
+        st.warning("🔥 **High-Yield Targets**")
+        for topic in db.get('important_subtopics', []):
+            st.markdown(f"- {topic}")
 
-    # --- TERMINAL 2: 5-PILLAR MATRIX ---
-    elif selected_view == "⚡ 5-Pillar Matrix":
-        st.subheader("Structural Pillar Analysis")
-        pillars_dict = core_data.get('pillars', {})
-        for label, descriptive_text in pillars_dict.items():
-            normalized_heading = label.replace('_', ' ').title()
-            st.info(f"### {normalized_heading}\n\n{descriptive_text}")
+    # --- CHEAT SHEET ---
+    elif view == "⚡ 5-Pillar Cheat Sheet":
+        st.subheader("Strategic Overview")
+        for key, val in db.get('cheat_sheet', {}).items():
+            clean_title = key.replace('_', ' ').title()
+            st.info(f"### {clean_title}\n\n{val}")
 
-    # --- TERMINAL 3: FLOWCHARTS ---
-    elif selected_view == "🎨 Graphviz Flowcharts":
-        st.subheader("Process Engineering Diagrams")
-        diagram_list = core_data.get('diagrams', [])
+    # --- FLOWCHARTS ---
+    elif view == "🎨 Flowcharts":
+        st.subheader("Process & Structure Maps")
+        st.caption("If rendering fails on mobile, use the Raw Code expander.")
         
-        for index, item in enumerate(diagram_list):
-            st.markdown(f"### {item.get('title', f'Diagram System {index+1}')}")
-            dot_string = item.get('dot', '')
+        flowcharts = db.get('flowcharts', [])
+        if not flowcharts:
+            st.info("No flowcharts generated.")
             
-            if dot_string:
+        for i, chart in enumerate(flowcharts):
+            st.markdown(f"### {chart.get('title', f'Map {i+1}')}")
+            raw_code = chart.get('dot_code', '')
+            
+            if raw_code:
+                # Security pass to ensure Graphviz handles quotes properly
+                safe_code = raw_code.replace("'", '"')
                 try:
-                    st.graphviz_chart(dot_string.replace("'", '"'))
+                    st.graphviz_chart(safe_code)
                 except Exception:
-                    st.error("Visualization pipeline failed to interpret current code configuration.")
+                    st.error("Graphviz rendering failed. See raw code below.")
             
-            with st.expander("🛠️ View Source DOT Code"):
-                st.code(dot_string, language="dot")
+            with st.expander("🛠️ View Raw DOT Code"):
+                st.code(raw_code, language="dot")
             st.markdown("---")
 
-    # --- TERMINAL 4: GS LINKAGES ---
-    elif selected_view == "📰 GS Linkages":
-        st.subheader("Syllabus Intersection Points")
-        for link in core_data.get('current_linkages', []):
-            with st.expander(f"📌 Linkage Domain: {link.get('paper', 'General Studies')}", expanded=True):
-                st.write(link.get('event', 'No metrics recorded.'))
+    # --- CURRENT AFFAIRS ---
+    elif view == "📰 Current Affairs":
+        st.subheader("Syllabus Linkages")
+        for news in db.get('recent_news', []):
+            with st.expander(f"📌 {news.get('headline')} | {news.get('gs_paper')}", expanded=True):
+                st.write(f"**Relevance:** {news.get('relevance')}")
 
-    # --- TERMINAL 5: PRELIMS SIMULATOR ---
-    elif selected_view == "🎯 Prelims Simulator (15)":
-        st.subheader("Active Retrieval Optimization")
-        mcq_pool = core_data.get('prelims_dataset', [])
+    # --- PRELIMS SIMULATOR ---
+    elif view == "🎯 Prelims (15 Qs)":
+        st.subheader("Active Recall Assessment")
+        mcqs = db.get('prelims_mcqs', [])
+        st.caption(f"Loaded {len(mcqs)} Targets")
         
-        for target_idx, question_node in enumerate(mcq_pool):
-            st.markdown(f"**Q{target_idx+1}: {question_node.get('question')}**")
-            valid_target = question_node.get('correct', '')
+        for i, mcq in enumerate(mcqs):
+            st.markdown(f"**Q{i+1}: {mcq.get('question')}**")
+            correct = mcq.get('correct_answer', '')
+            choice = st.radio("Select:", mcq.get('options', []), key=f"q_{i}", index=None, label_visibility="collapsed")
             
-            user_input = st.radio(
-                "Options:", 
-                question_node.get('choices', []), 
-                key=f"prelim_q_{target_idx}", 
-                index=None, 
-                label_visibility="collapsed"
-            )
-            
-            if st.button("Evaluate Assessment", key=f"eval_trigger_{target_idx}"):
-                if user_input == valid_target:
-                    st.success(f"🎯 CORRECT. Selected value matches standard: {valid_target}")
-                elif not user_input:
-                    st.warning("An evaluation selection must be registered.")
+            if st.button("Check Answer", key=f"btn_{i}"):
+                if choice == correct:
+                    st.success(f"🎯 CORRECT! {correct}")
+                elif not choice:
+                    st.warning("Please make a selection.")
                 else:
-                    st.error(f"❌ DEFICIT. Authorized standard value: {valid_target}")
-                st.info(f"**Rationale:** {question_node.get('rationale')}")
+                    st.error(f"❌ INCORRECT. Answer: {correct}")
+                st.info(f"**Analysis:** {mcq.get('short_explanation')}")
             st.markdown("---")
 
-    # --- TERMINAL 6: MAINS LAB ---
-    elif selected_view == "✍️ Mains Lab (10)":
-        st.subheader("Mains Examination Laboratory")
-        mains_pool = core_data.get('mains_dataset', [])
+    # --- MAINS LAB ---
+    elif view == "✍️ Mains Lab (10 Qs)":
+        st.subheader("AI-Assisted Drafting")
+        questions = db.get('mains_questions', [])
+        st.caption(f"Loaded {len(questions)} Analytical Prompts")
         
-        if mains_pool:
-            selected_prompt = st.selectbox("Select Target Question Vector:", mains_pool)
+        if questions:
+            active_q = st.selectbox("Select Prompt:", questions)
             
-            if 'current_target_q' not in st.session_state or st.session_state.current_target_q != selected_prompt:
-                st.session_state.current_target_q = selected_prompt
-                st.session_state.response_draft = ""
-                st.session_state.pop('active_grading', None)
+            # Reset workspace on question change
+            if 'last_q' not in st.session_state or st.session_state.last_q != active_q:
+                st.session_state.last_q = active_q
+                st.session_state.draft_text = ""
+                st.session_state.pop('mains_grade', None)
 
-            st.write(f"**Analytical Prompt:** {selected_prompt}")
-            written_input = st.text_area("Draft Matrix Workspace:", height=250, key="response_draft")
-            calculated_words = len(written_input.split())
-            st.caption(f"Word Registration Count: **{calculated_words}**")
+            st.write(f"**Mission:** {active_q}")
+            draft = st.text_area("Workspace:", height=250, key="draft_text")
+            
+            def clear_memory():
+                st.session_state.draft_text = ""
+                st.session_state.pop('mains_grade', None)
 
-            def reset_workspace_memory():
-                st.session_state.response_draft = ""
-                st.session_state.pop('active_grading', None)
+            c1, c2 = st.columns([1, 1])
+            with c1: 
+                submit = st.button("Grade via 2.5-Flash")
+            with c2: 
+                st.button("Clear Workspace", on_click=clear_memory)
 
-            left_split, right_split = st.columns(2)
-            with left_split:
-                execute_grading = st.button("Initialize Grading Analysis")
-            with right_split:
-                st.button("Purge Current Workspace", on_click=reset_workspace_memory)
-
-            if execute_grading:
-                if calculated_words < 30:
-                    st.error("Insufficent text density to extract a structural pattern profile.")
+            if submit:
+                if len(draft.split()) < 30:
+                    st.error("Draft is too short for formal assessment.")
                 else:
-                    with st.spinner("Processing framework telemetry..."):
-                        grading_result = execute_evaluation(selected_prompt, written_input)
-                        if grading_result:
-                            st.session_state.active_grading = grading_result
+                    with st.spinner("Analyzing parameters..."):
+                        grade_report = grade_answer(active_q, draft)
+                        if grade_report:
+                            st.session_state.mains_grade = grade_report
 
-            if 'active_grading' in st.session_state:
-                report_node = st.session_state.active_grading
+            if 'mains_grade' in st.session_state:
+                gr = st.session_state.mains_grade
                 st.markdown("---")
-                st.metric("Indicative Score Rating", report_node.get('score', 'N/A'))
+                st.metric("Indicative Score", gr.get('marks_out_of_15', 'N/A'))
                 
-                st.info(f"### Structural Evaluation Breakdown\n\n{report_node.get('segment_analysis')}")
+                st.info(f"**Intro:** {gr.get('introduction_feedback')}\n\n**Body:** {gr.get('body_feedback')}\n\n**Conclusion:** {gr.get('conclusion_feedback')}")
+                st.success("**Strengths:**\n" + "\n".join([f"- {s}" for s in gr.get('strengths', [])]))
+                st.warning("**Improvements:**\n" + "\n".join([f"- {i}" for i in gr.get('improvements', [])]))
                 
-                st.success("**Validated Strengths:**\n" + "\n".join([f"- {pos}" for pos in report_node.get('positives', [])]))
-                st.warning("**Structural Gaps Identified:**\n" + "\n".join([f"- {gap}" for gap in report_node.get('gaps', [])]))
-                
-                with st.expander("📘 Review Target Benchmark Blueprint"):
-                    st.write(report_node.get('benchmark_blueprint'))
+                with st.expander("📘 Read Model Framework"):
+                    st.write(gr.get('ideal_framework'))
