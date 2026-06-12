@@ -53,8 +53,8 @@ else:
 # Note: @st.cache_data has been removed. Every search is a fresh generation.
 def fetch_topic_data_from_ai(topic):
     model = genai.GenerativeModel('gemini-2.5-flash')
-
-        prompt = f"""
+    
+       prompt = f"""
     You are an elite UPSC tutor. Generate an incredibly comprehensive, high-yield study dashboard for: "{topic}".
     
     1. EXPLANATION: Deep, multi-dimensional analysis (min 6 paragraphs).
@@ -70,6 +70,7 @@ def fetch_topic_data_from_ai(topic):
     
     Respond ONLY with a valid JSON object. Do not include ```json markdown.
     """
+
     
     Structure exactly like this:
     {{
