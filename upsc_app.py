@@ -9,7 +9,7 @@ if "GEMINI_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
 def get_ai_data(topic):
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-2.5-flash')
     prompt = f"""Generate a study guide for '{topic}'. Output ONLY valid JSON with these keys: 
     "title", "explanation" (max 3 paragraphs), "one_pager" (object with 5 keys), 
     "flowcharts" (list of 5 dicts with title/code), "prelims" (list of 15 dicts), 
