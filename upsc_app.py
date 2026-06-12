@@ -35,7 +35,7 @@ else:
 # Native JSON Data Generators
 # ---------------------------------------------------------
 def fetch_topic_data_from_ai(topic):
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-2.5-flash')
     
     prompt = f"""
     You are an elite UPSC tutor. Generate a comprehensive JSON study dashboard for: "{topic}".
