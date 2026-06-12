@@ -53,15 +53,16 @@ else:
 # 3. AI Generation Engines
 # ---------------------------------------------------------
 def fetch_dashboard_data(topic):
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    model = genai.GenerativeModel('gemini-2.6-flash')
     
     prompt = f"""
     You are an elite UPSC tutor. Generate a study dashboard for: "{topic}".
     
-    STRICT RULES FOR JSON STABILITY:
-    - Write everything on a single horizontal line if possible. DO NOT use literal newline characters (Enter key) inside strings.
-    - DO NOT use double quotes (") inside any string values. Use single quotes (') instead.
-    - FLOWCHARTS: Generate 5 Graphviz DOT codes (rankdir=TB). Keep them extremely simple. Do not use backslashes (\).
+    STRICT RULES FOR JSON STABILITY & VOLUME:
+    1. NO NEWLINES: DO NOT use literal newline characters (Enter key) inside strings. Write everything on a single horizontal line if possible.
+    2. QUOTES: DO NOT use double quotes (") inside any string values. Use single quotes (') instead.
+    3. FLOWCHARTS: Generate 5 Graphviz DOT codes (rankdir=TB). Keep them extremely simple. Do not use backslashes (\).
+    4. QUOTAS: You MUST generate EXACTLY 15 distinct MCQ dictionary objects in "pyq_prelims" and EXACTLY 10 distinct strings in "pyq_mains". Do not stop at 1.
     
     Structure exactly like this:
     {{
@@ -82,18 +83,22 @@ def fetch_dashboard_data(topic):
             {{"gs_paper": "GS 3", "headline": "...", "relevance": "...", "impact": "..."}}
         ],
         "pyq_prelims": [
-            {{"q": "...", "options": ["A) ...", "B) ...", "C) ...", "D) ..."], "answer": "A) ...", "explanation": "..."}}
+            {{"q": "Q1...", "options": ["A) ...", "B) ...", "C) ...", "D) ..."], "answer": "A) ...", "explanation": "..."}},
+            {{"q": "Q2...", "options": ["A) ...", "B) ...", "C) ...", "D) ..."], "answer": "A) ...", "explanation": "..."}},
+            {{"q": "Q3...", "options": ["A) ...", "B) ...", "C) ...", "D) ..."], "answer": "A) ...", "explanation": "..."}}
         ],
         "pyq_mains": [
-            "Q1 string...",
-            "Q2 string..."
+            "1. Q1 string...",
+            "2. Q2 string...",
+            "3. Q3 string..."
         ]
     }}
     """
     try:
         response = model.generate_content(
             prompt,
-            generation_config={"temperature": 0.2, "response_mime_type": "application/json"}
+            # FIXED: Added max_output_tokens back in so the AI has room to write 25 questions
+            generation_config={"max_output_tokens": 8192, "temperature": 0.2, "response_mime_type": "application/json"}
         )
         return json.loads(response.text, strict=False)
     except Exception as e:
@@ -155,7 +160,7 @@ page = st.sidebar.radio(
 )
 
 # ---------------------------------------------------------
-# 5. Main Content Views
+# 5. Main Content Views (Stacking for Android)
 # ---------------------------------------------------------
 if 'current_data' not in st.session_state or not st.session_state.current_data:
     st.markdown("<h2 style='text-align: center; margin-top: 5vh;'>Welcome to UPSC AI 🚀</h2>", unsafe_allow_html=True)
@@ -235,6 +240,7 @@ else:
         if qs:
             sel_q = st.selectbox("Select question to practice:", qs)
             
+            # Reset workspace if question changes
             if 'eval_q_track' not in st.session_state or st.session_state.eval_q_track != sel_q:
                 st.session_state.eval_q_track = sel_q
                 st.session_state.mains_text = ""
@@ -260,6 +266,7 @@ else:
 
             st.button("Clear Workspace", on_click=clear_workspace)
 
+            # Display Evaluation
             if 'eval_result' in st.session_state:
                 e = st.session_state.eval_result
                 st.markdown("---")
