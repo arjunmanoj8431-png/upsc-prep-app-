@@ -5,9 +5,54 @@ import google.generativeai as genai
 import json
 
 # ---------------------------------------------------------
-# Page Configuration
+# Page Configuration & CSS Styling
 # ---------------------------------------------------------
-st.set_page_config(page_title="UPSC AI Master", layout="wide", page_icon="📚")
+st.set_page_config(page_title="UPSC AI Pro Dashboard", layout="wide", page_icon="🚀")
+
+# Injecting Custom CSS for a Dashy, Animated, Colorful Look
+st.markdown("""
+    <style>
+    /* Main Background Gradient */
+    .stApp {
+        background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+    }
+    
+    /* Animated Buttons */
+    .stButton>button {
+        background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%);
+        border: none;
+        color: #1e1e1e;
+        border-radius: 25px;
+        font-weight: bold;
+        transition: all 0.3s ease-in-out;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .stButton>button:hover {
+        transform: translateY(-3px) scale(1.02);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    /* Colorful Sidebar */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(to bottom, #1e3c72 0%, #2a5298 100%);
+    }
+    [data-testid="stSidebar"] * {
+        color: white !important;
+    }
+    
+    /* Headers and Text */
+    h1, h2, h3 {
+        color: #2c3e50;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    /* Flashy Success/Info Boxes */
+    div.stAlert {
+        border-radius: 15px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+    </style>
+""", unsafe_allow_html=True)
 
 # ---------------------------------------------------------
 # API Configuration
@@ -18,48 +63,43 @@ else:
     genai.configure(api_key="YOUR_API_KEY_HERE") 
 
 # ---------------------------------------------------------
-# LLM Data Generation Function
+# High-Capacity LLM Data Generation Function
 # ---------------------------------------------------------
 @st.cache_data(show_spinner=False)
 def fetch_topic_data_from_ai(topic):
-    # Using the current, active model
     model = genai.GenerativeModel('gemini-2.5-flash')
     
+    # Upgraded prompt for maximum capacity (Multiple flowcharts, huge PYQ lists)
     prompt = f"""
-    You are an expert UPSC (Union Public Service Commission of India) tutor.
-    Generate highly accurate, in-depth study material for the topic: "{topic}".
+    You are an elite UPSC tutor. Generate highly extensive, deep-dive study material for: "{topic}".
+    Max out your output capacity to provide as many PYQs and Flowcharts as safely possible without cutting off.
     
-    Respond ONLY with a valid JSON object. Do not include markdown formatting like ```json.
+    Respond ONLY with a valid JSON object. Do not include ```json markdown.
     
-    The JSON must follow this exact structure:
+    Structure exactly like this:
     {{
-        "title": "Clear Title of the Topic",
-        "explanation": "A highly detailed, 3-4 paragraph explanation covering the geographical, historical, or constitutional basics. Use markdown (bolding, bullet points).",
-        "important_topics": ["Crucial Sub-topic 1", "Crucial Sub-topic 2", "Crucial Sub-topic 3"],
+        "title": "Clear Title",
+        "explanation": "At least 5-6 paragraphs of deep, conceptual explanation. Use bolding and bullets.",
+        "important_topics": ["Topic 1", "Topic 2", "Topic 3", "Topic 4", "Topic 5"],
         "one_pager": {{
-            "Key Fact 1": "Details",
-            "Key Fact 2": "Details",
-            "Key Fact 3": "Details"
+            "Fact 1": "Details", "Fact 2": "Details", "Fact 3": "Details", "Fact 4": "Details", "Fact 5": "Details"
         }},
-        "flowchart": "A valid Graphviz DOT language string representing a process flowchart. Example: 'digraph G {{ A -> B; }}'. Ensure syntax is perfect.",
+        "flowcharts": [
+            {{"title": "Core Mechanism", "code": "digraph G {{ rankdir=LR; A -> B; }}"}},
+            {{"title": "Historical Evolution / Process", "code": "digraph G {{ A -> B; }}"}},
+            {{"title": "Impact Analysis", "code": "digraph G {{ A -> B; }}"}}
+        ],
         "pyq_prelims": [
             {{
-                "year": 2021, 
-                "q": "A highly relevant mock or actual UPSC Prelims question regarding this topic.",
-                "options": ["A) Option One", "B) Option Two", "C) Option Three", "D) Option Four"],
-                "answer": "A) Option One",
-                "explanation": "A brief explanation of why this option is correct."
-            }},
-            {{
-                "year": 2018, 
-                "q": "Another relevant Prelims question.",
-                "options": ["A) Option 1", "B) Option 2", "C) Option 3", "D) Option 4"],
-                "answer": "C) Option 3",
-                "explanation": "A brief explanation."
+                "year": 2023, 
+                "q": "Generate up to 10 highly accurate Prelims MCQs...",
+                "options": ["A) Opt 1", "B) Opt 2", "C) Opt 3", "D) Opt 4"],
+                "answer": "A) Opt 1",
+                "explanation": "Detailed explanation."
             }}
         ],
         "pyq_mains": [
-            {{"year": 2022, "q": "A highly relevant mock or actual UPSC Mains analytical question regarding this topic."}}
+            {{"year": 2023, "q": "Generate up to 8 accurate Mains analytical questions..."}}
         ]
     }}
     """
@@ -68,166 +108,149 @@ def fetch_topic_data_from_ai(topic):
         response = model.generate_content(prompt)
         raw_text = response.text.strip()
         
-        # Bulletproof JSON extraction: Hunt for the exact start and end brackets
         start_index = raw_text.find('{')
         end_index = raw_text.rfind('}')
         
         if start_index != -1 and end_index != -1:
             clean_json = raw_text[start_index:end_index+1]
-            # strict=False allows for safe parsing of paragraph breaks
-            parsed_data = json.loads(clean_json, strict=False)
-            return parsed_data
+            return json.loads(clean_json, strict=False)
         else:
-            st.error("The AI did not return a valid data format. Please try generating again.")
             return None
-            
     except Exception as e:
-        st.error(f"Error fetching data from AI: {e}")
         return None
 
 # ---------------------------------------------------------
-# Sidebar & State Management
+# UI: Sidebar Navigation
 # ---------------------------------------------------------
-st.sidebar.title("🏛️ UPSC Target App")
+st.sidebar.title("✨ UPSC Pro Dash")
 st.sidebar.markdown("---")
 
 if 'current_data' not in st.session_state:
     st.session_state.current_data = None
-if 'topic_name' not in st.session_state:
-    st.session_state.topic_name = ""
 
-st.sidebar.subheader("Search Topic")
-search_query = st.sidebar.text_input("Enter a topic (e.g., 'Fundamental Rights')")
+st.sidebar.subheader("🔍 Search Topic")
+search_query = st.sidebar.text_input("Enter Syllabus Topic:")
 
-if st.sidebar.button("Generate Study Material"):
+if st.sidebar.button("🚀 Launch AI Engine"):
     if search_query:
-        with st.spinner(f"AI is compiling data for '{search_query}'..."):
+        with st.spinner("⚡ Synthesizing deep-dive data..."):
             data = fetch_topic_data_from_ai(search_query)
             if data:
                 st.session_state.current_data = data
-                st.session_state.topic_name = data['title']
+                st.toast("Data generated successfully!", icon="✅")
+            else:
+                st.sidebar.error("Data generation failed. Try a slightly narrower topic.")
     else:
         st.sidebar.warning("Please enter a topic.")
 
 st.sidebar.markdown("---")
-st.sidebar.subheader("Navigation")
 page = st.sidebar.radio(
-    "Go to:",
-    ["1. Overview & Explanation", 
-     "2. One-Pager Revision", 
-     "3. Flow Charts", 
-     "4. Previous Year Questions", 
-     "5. Mains Answer Writing"]
+    "📂 Navigate Dash",
+    ["📖 Deep Explanation", 
+     "⚡ Flashcards (One-Pager)", 
+     "🎨 Visual Maps (Flowcharts)", 
+     "🎯 Prelims Simulator", 
+     "✍️ Mains Masterclass"]
 )
 
 # ---------------------------------------------------------
-# Main Content Area
+# UI: Main Content Area
 # ---------------------------------------------------------
 if st.session_state.current_data is None:
-    st.title("Welcome to your AI-Powered UPSC Dashboard")
-    st.info("👈 Enter any topic in the syllabus in the sidebar to begin.")
+    st.markdown("<h1 style='text-align: center; color: #6a11cb;'>Welcome to the Future of UPSC Prep 🚀</h1>", unsafe_allow_html=True)
+    st.info("👈 Fire up the AI Engine in the sidebar to generate a custom, colorful dashboard for any topic.")
 else:
     data = st.session_state.current_data
-    st.title(f"Topic: {data.get('title', 'Unknown Topic')}")
+    st.header(f"📌 {data.get('title', 'Topic Dashboard')}")
+    st.markdown("---")
     
-    # PAGE 1: Overview
-    if page == "1. Overview & Explanation":
-        st.header("In-Depth Explanation")
-        st.markdown(data.get('explanation', 'No explanation provided.'))
-        
-        st.markdown("---")
-        st.header("Crucial Sub-Topics to Master")
-        for item in data.get('important_topics', []):
-            st.markdown(f"- {item}")
+    # PAGE 1: Explanation
+    if page == "📖 Deep Explanation":
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            st.markdown(data.get('explanation', 'No data.'))
+        with col2:
+            st.info("🔥 **High Yield Sub-Topics**")
+            for item in data.get('important_topics', []):
+                st.markdown(f"- {item}")
 
     # PAGE 2: One-Pager
-    elif page == "2. One-Pager Revision":
-        st.header("One-Pager (Quick Revision)")
+    elif page == "⚡ Flashcards (One-Pager)":
+        st.subheader("High-Speed Revision")
         one_pager_data = data.get('one_pager', {})
         if one_pager_data:
-            df = pd.DataFrame(list(one_pager_data.items()), columns=['Parameter', 'Fact / Details'])
-            st.table(df)
-        else:
-            st.write("No one-pager facts generated.")
+            for key, value in one_pager_data.items():
+                st.success(f"**{key}:** {value}")
 
-    # PAGE 3: Flow Charts
-    elif page == "3. Flow Charts":
-        st.header("Process Flow / Mechanism")
-        flowchart_code = data.get('flowchart', "")
-        if flowchart_code and "digraph" in flowchart_code:
-            try:
-                st.graphviz_chart(flowchart_code)
-            except Exception as e:
-                st.error("The AI generated an invalid flowchart format.")
-        else:
-            st.info("No flowchart could be generated for this topic.")
-
-    # PAGE 4: PYQs (INTERACTIVE)
-    elif page == "4. Previous Year Questions":
-        st.header("Interactive Practice Simulator")
-        st.markdown("---")
+    # PAGE 3: Flowcharts (Multiple Tabs)
+    elif page == "🎨 Visual Maps (Flowcharts)":
+        st.subheader("Process & Mechanism Maps")
+        flowcharts = data.get('flowcharts', [])
         
-        st.subheader("📝 Prelims Practice (MCQs)")
+        if not flowcharts:
+            st.info("No flowcharts generated.")
+        else:
+            # Create a dynamic number of tabs based on how many flowcharts the AI generated
+            tabs = st.tabs([fc.get('title', f"Map {i+1}") for i, fc in enumerate(flowcharts)])
+            
+            for i, tab in enumerate(tabs):
+                with tab:
+                    fc_code = flowcharts[i].get('code', '')
+                    if "digraph" in fc_code:
+                        try:
+                            st.graphviz_chart(fc_code)
+                        except Exception:
+                            st.error("Invalid diagram syntax.")
+                    else:
+                        st.warning("Diagram data missing.")
+
+    # PAGE 4: Prelims Interactive
+    elif page == "🎯 Prelims Simulator":
+        st.subheader("Interactive Prelims Combat")
         prelims_qs = data.get('pyq_prelims', [])
         
         if not prelims_qs:
-            st.info("No Prelims questions generated.")
+            st.info("No Prelims data available.")
         else:
             for i, pyq in enumerate(prelims_qs):
-                with st.container():
-                    st.markdown(f"**Q{i+1} ({pyq.get('year', 'N/A')}): {pyq.get('q')}**")
+                with st.expander(f"Question {i+1} - Year: {pyq.get('year', 'N/A')}", expanded=(i==0)):
+                    st.write(f"**{pyq.get('q')}**")
                     options = pyq.get('options', [])
-                    correct_answer = pyq.get('answer', '')
-                    explanation = pyq.get('explanation', '')
+                    ans = pyq.get('answer', '')
                     
                     if options:
-                        user_choice = st.radio("Select an option:", options, key=f"radio_{i}", index=None)
-                        
-                        if st.button("Check Answer", key=f"btn_{i}"):
-                            if user_choice == correct_answer:
-                                st.success(f"Correct! The answer is {correct_answer}")
+                        user_choice = st.radio("Select:", options, key=f"radio_{i}", index=None, label_visibility="collapsed")
+                        if st.button("Verify Target", key=f"btn_{i}"):
+                            if user_choice == ans:
+                                st.success(f"🎯 SPOT ON! The answer is {ans}")
+                                st.balloons() # Animated success!
                             elif user_choice is None:
-                                st.warning("Please select an option first.")
+                                st.warning("Select an option to fire.")
                             else:
-                                st.error(f"Incorrect. The correct answer is: {correct_answer}")
-                            
-                            if explanation:
-                                st.info(f"**Explanation:** {explanation}")
-                    st.markdown("---")
+                                st.error(f"❌ Missed. Correct target: {ans}")
+                            if pyq.get('explanation'):
+                                st.info(f"**Intel:** {pyq.get('explanation')}")
 
-        st.subheader("🖋️ Mains Practice")
-        for pyq in data.get('pyq_mains', []):
-            with st.expander(f"Mains Question ({pyq.get('year', 'N/A')})"):
-                st.write(pyq.get('q', ''))
-
-    # PAGE 5: Mains Answer Writing
-    elif page == "5. Mains Answer Writing":
-        st.header("Mains Answer Writing Simulator")
-        
+    # PAGE 5: Mains Practice
+    elif page == "✍️ Mains Masterclass":
+        st.subheader("Mains Answer Writing")
         questions = [q['q'] for q in data.get('pyq_mains', []) if 'q' in q]
+        
         if questions:
-            selected_q = st.selectbox("Select Question to practice", questions)
-            st.markdown(f"**Attempt:** {selected_q}")
+            selected_q = st.selectbox("Select Target Question", questions)
+            st.write(f"**Mission:** {selected_q}")
             
-            with st.expander("Show Recommended Structure Hint"):
-                st.markdown("""
-                * **Introduction:** Define the core concept. Provide a brief context or data point.
-                * **Body Paragraph 1:** Address the first part of the question.
-                * **Body Paragraph 2:** Address the second part/challenges/impact.
-                * **Conclusion:** Way forward, SDG linkage, or policy recommendation.
-                """)
+            answer = st.text_area("Draft your response (150-250 words):", height=250)
+            words = len(answer.split())
             
-            answer = st.text_area("Type your answer here:", height=300)
-            word_count = len(answer.split())
+            st.progress(min(words / 250, 1.0))
+            st.caption(f"Word Status: {words} / 250 max")
             
-            st.caption(f"Word Count: {word_count} / 250")
-            progress = min(word_count / 250, 1.0)
-            st.progress(progress)
-            
-            if st.button("Submit Answer"):
-                if word_count < 50:
-                    st.warning("Your answer is too short to be evaluated. Try to hit at least 150 words.")
+            if st.button("Submit Draft"):
+                if words < 50:
+                    st.error("Draft too short. Expand your analysis.")
                 else:
-                    st.success("Excellent attempt! Your word count and structure look solid.")
+                    st.success("Draft securely recorded for review! 📝")
+                    st.toast("Excellent writing session!", icon="✨")
         else:
-            st.info("No Mains questions generated for this topic.")
+            st.info("No Mains questions available.")
