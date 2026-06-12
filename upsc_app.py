@@ -25,7 +25,6 @@ def fetch_topic_data_from_ai(topic):
     # Using the current, active model
     model = genai.GenerativeModel('gemini-2.5-flash')
     
-    # Notice the updated instructions for 'pyq_prelims' below
     prompt = f"""
     You are an expert UPSC (Union Public Service Commission of India) tutor.
     Generate highly accurate, in-depth study material for the topic: "{topic}".
@@ -68,14 +67,20 @@ def fetch_topic_data_from_ai(topic):
     try:
         response = model.generate_content(prompt)
         raw_text = response.text.strip()
-        if raw_text.startswith("```json"):
-            raw_text = raw_text[7:]
-        if raw_text.startswith("```"):
-            raw_text = raw_text[3:]
-        if raw_text.endswith("```"):
-            raw_text = raw_text[:-3]
-            data = json.loads(raw_text.strip(), strict=False)
-        return data
+        
+        # Bulletproof JSON extraction: Hunt for the exact start and end brackets
+        start_index = raw_text.find('{')
+        end_index = raw_text.rfind('}')
+        
+        if start_index != -1 and end_index != -1:
+            clean_json = raw_text[start_index:end_index+1]
+            # strict=False allows for safe parsing of paragraph breaks
+            parsed_data = json.loads(clean_json, strict=False)
+            return parsed_data
+        else:
+            st.error("The AI did not return a valid data format. Please try generating again.")
+            return None
+            
     except Exception as e:
         st.error(f"Error fetching data from AI: {e}")
         return None
@@ -176,7 +181,6 @@ else:
                     explanation = pyq.get('explanation', '')
                     
                     if options:
-                        # The index=None parameter ensures no option is selected by default
                         user_choice = st.radio("Select an option:", options, key=f"radio_{i}", index=None)
                         
                         if st.button("Check Answer", key=f"btn_{i}"):
@@ -216,7 +220,6 @@ else:
             answer = st.text_area("Type your answer here:", height=300)
             word_count = len(answer.split())
             
-            # Interactive word count progress bar
             st.caption(f"Word Count: {word_count} / 250")
             progress = min(word_count / 250, 1.0)
             st.progress(progress)
