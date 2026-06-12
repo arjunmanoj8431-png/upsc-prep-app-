@@ -53,17 +53,23 @@ else:
 # Note: @st.cache_data has been removed. Every search is a fresh generation.
 def fetch_topic_data_from_ai(topic):
     model = genai.GenerativeModel('gemini-2.5-flash')
+
+        prompt = f"""
+    You are an elite UPSC tutor. Generate an incredibly comprehensive, high-yield study dashboard for: "{topic}".
     
-    prompt = f"""
-    You are an elite UPSC tutor. Generate highly extensive, deep-dive study material for: "{topic}".
-    
-    CRITICAL INSTRUCTIONS: 
-    1. You MUST generate exactly 5 flowcharts.
-    2. You MUST generate exactly 15 Prelims MCQs.
-    3. You MUST generate exactly 15 Mains analytical questions.
-    Do not stop early. Do not skip any items.
+    1. EXPLANATION: Deep, multi-dimensional analysis (min 6 paragraphs).
+    2. ONE-PAGER: This must be a comprehensive "Cheat Sheet" structured into these 5 pillars:
+       - Pillar A: Constitutional/Legal Basis (Articles, Acts, Amendments).
+       - Pillar B: High-Yield Facts & Data (Key statistics, committee names, reports).
+       - Pillar C: Conceptual Keywords (Definitions, technical jargon for Prelims).
+       - Pillar D: Current Context (Why it's trending, recent developments).
+       - Pillar E: Synthesis (Challenges vs. Solutions).
+    3. FLOWCHARTS: Generate exactly 5 complex mechanism/process diagrams in Graphviz DOT format.
+    4. PRELIMS: Generate 15 challenging, high-difficulty MCQs with options, answer, and deep-dive explanation.
+    5. MAINS: Generate 15 analytical Mains questions requiring multidimensional thinking.
     
     Respond ONLY with a valid JSON object. Do not include ```json markdown.
+    """
     
     Structure exactly like this:
     {{
