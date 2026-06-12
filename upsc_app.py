@@ -1,322 +1,292 @@
 import streamlit as st
-import json
 import google.generativeai as genai
-import typing
+import json
+from typing import List, TypedDict
 
-# =====================================================================
-# 1. PAGE CONFIGURATION & RESPONSIVE CSS
-# =====================================================================
-st.set_page_config(page_title="UPSC AI Pro Dashboard", layout="centered", page_icon="🚀")
+# ==============================================================================
+# 1. PAGE SETUP & MOBILE-FIRST CSS
+# ==============================================================================
+st.set_page_config(page_title="UPSC AI Pro", layout="centered", page_icon="🏛️")
 
 st.markdown("""
     <style>
-    /* Mobile-Optimized Gradient Buttons */
+    /* Gradient Buttons */
     .stButton>button { 
         background: linear-gradient(135deg, #FF416C 0%, #FF4B2B 100%); 
         color: white !important; 
-        border-radius: 12px; 
-        border: none; 
+        border-radius: 10px; 
         font-weight: 800; 
         width: 100%; 
-        padding: 0.6rem;
-        transition: transform 0.2s ease;
     }
-    .stButton>button:active { transform: scale(0.98); }
+    .stButton>button:hover { transform: scale(1.02); }
     
-    /* Dynamic Headings */
+    /* Theme-Agnostic Search Box */
+    div[data-baseweb="input"] { 
+        background-color: #ffffff !important; 
+        border: 2px solid #26D0CE !important; 
+        border-radius: 8px !important; 
+    }
+    div[data-baseweb="input"] input { 
+        color: #000000 !important; 
+        -webkit-text-fill-color: #000000 !important; 
+        font-weight: bold; 
+    }
+    
+    /* Vibrant Headings */
     h1, h2, h3 { 
         background: -webkit-linear-gradient(45deg, #00b4db, #0083b0); 
         -webkit-background-clip: text; 
         -webkit-text-fill-color: transparent; 
         font-weight: 900; 
     }
-    
-    /* Bulletproof Dark-Mode Search Box */
-    .stTextInput div[data-baseweb="base-input"] { 
-        background-color: #ffffff !important; 
-        border: 2px solid #26D0CE !important; 
-        border-radius: 8px !important; 
-    }
-    .stTextInput input { 
-        color: #000000 !important; 
-        -webkit-text-fill-color: #000000 !important; 
-        caret-color: #000000 !important; 
-        font-weight: bold !important; 
-    }
-    .stTextInput input::placeholder { 
-        color: #777777 !important; 
-        -webkit-text-fill-color: #777777 !important; 
-    }
-    
-    /* Clean Expanders and Info Boxes */
-    div.stAlert { border-radius: 10px !important; }
-    .streamlit-expanderHeader { font-weight: bold !important; }
     </style>
 """, unsafe_allow_html=True)
 
-# =====================================================================
-# 2. SCHEMA DEFINITIONS (ENFORCES PERFECT JSON SYNTAX)
-# =====================================================================
-class CheatSheet(typing.TypedDict):
-    Constitutional_and_Legal_Basis: str
-    Statistics_and_Reports: str
-    Conceptual_Keywords: str
-    Current_Affairs_Context: str
-    Challenges_and_Solutions: str
+# ==============================================================================
+# 2. STRICT TYPED SCHEMAS (PREVENTS ALL PARSING CRASHES)
+# ==============================================================================
+class CheatSheetSchema(TypedDict):
+    constitutional_legal_basis: str
+    statistics_reports: str
+    keywords: str
+    current_affairs_context: str
+    challenges_solutions: str
 
-class Flowchart(typing.TypedDict):
+class FlowchartSchema(TypedDict):
     title: str
-    code: str
+    dot_code: str
 
-class CurrentAffair(typing.TypedDict):
+class CurrentAffairsSchema(TypedDict):
     gs_paper: str
     headline: str
     relevance: str
-    impact: str
 
-class MCQ(typing.TypedDict):
-    q: str
-    options: typing.List[str]
-    answer: str
-    explanation: str
+class MCQSchema(TypedDict):
+    question: str
+    options: List[str]
+    correct_answer: str
+    short_explanation: str
 
-class DashboardSchema(typing.TypedDict):
-    title: str
-    explanation: str
-    core_targets: typing.List[str]
-    cheat_sheet: CheatSheet
-    flowcharts: typing.List[Flowchart]
-    current_affairs: typing.List[CurrentAffair]
-    prelims: typing.List[MCQ]
-    mains: typing.List[str]
+class DashboardSchema(TypedDict):
+    topic_title: str
+    core_explanation: str
+    important_subtopics: List[str]
+    cheat_sheet: CheatSheetSchema
+    flowcharts: List[FlowchartSchema]
+    recent_news: List[CurrentAffairsSchema]
+    prelims_mcqs: List[MCQSchema]
+    mains_questions: List[str]
 
-class EvaluationSchema(typing.TypedDict):
-    marks_awarded: str
-    intro_feedback: str
+class GradingSchema(TypedDict):
+    marks_out_of_15: str
+    introduction_feedback: str
     body_feedback: str
     conclusion_feedback: str
-    strengths: typing.List[str]
-    improvements: typing.List[str]
-    model_framework: str
+    strengths: List[str]
+    improvements: List[str]
+    ideal_framework: str
 
-# =====================================================================
-# 3. API INITIALIZATION
-# =====================================================================
+# ==============================================================================
+# 3. API CONFIGURATION
+# ==============================================================================
 if "GEMINI_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 else:
     genai.configure(api_key="YOUR_API_KEY_HERE") 
 
-# =====================================================================
-# 4. AI GENERATION ENGINES (GEMINI 2.5 FLASH)
-# =====================================================================
-def generate_dashboard(topic):
-    """Generates the dashboard mathematically constrained to the DashboardSchema."""
+# ==============================================================================
+# 4. GENERATION ENGINES (GEMINI 2.5 FLASH)
+# ==============================================================================
+def forge_dashboard(topic: str):
+    """Generates the main dashboard using strict JSON Schema enforcement."""
     model = genai.GenerativeModel('gemini-2.5-flash')
     
     prompt = f"""
-    You are an elite UPSC exam strategist. Generate a comprehensive study dashboard for the topic: "{topic}".
+    You are an elite UPSC tutor. Create a massive study dashboard for: "{topic}".
     
-    CRITICAL INSTRUCTIONS:
-    - You must output EXACTLY 15 highly distinct MCQs for Prelims.
-    - You must output EXACTLY 10 distinct questions for Mains.
-    - For Graphviz DOT codes, use standard formatting (rankdir=TB). The backend will automatically handle quote escaping.
+    ANTI-TRUNCATION RULES (CRITICAL):
+    To fit 15 MCQs and 10 Mains questions into the output limit, you MUST be ruthlessly concise:
+    - MCQ Explanations: MAXIMUM 10 words.
+    - Core Explanation: MAXIMUM 3 short paragraphs.
+    - Flowcharts: Use minimal node names. DO NOT use single quotes. Use standard double quotes for node names.
+    
+    You MUST output EXACTLY 15 Prelims MCQs and EXACTLY 10 Mains questions.
     """
+    
     try:
         response = model.generate_content(
             prompt,
             generation_config=genai.GenerationConfig(
-                max_output_tokens=8192, 
-                temperature=0.2, 
+                max_output_tokens=8192,
+                temperature=0.2,
                 response_mime_type="application/json",
                 response_schema=DashboardSchema
             )
         )
-        return json.loads(response.text, strict=False)
+        return json.loads(response.text)
     except Exception as e:
-        st.error(f"Engine Failure: {e}")
+        st.error(f"Generation Engine Error: {e}")
         return None
 
-def grade_mains_answer(question, user_answer):
-    """Evaluates a student's answer constrained to the EvaluationSchema."""
+def grade_answer(question: str, answer: str):
+    """Grades the mains answer using strict JSON Schema enforcement."""
     model = genai.GenerativeModel('gemini-2.5-flash')
     
-    prompt = f"""
-    Act as a strict UPSC examiner. Grade this answer out of 15 marks.
-    Question: {question}
-    Answer: {user_answer}
-    """
+    prompt = f"Act as a strict UPSC examiner. Grade this out of 15.\nQ: {question}\nA: {answer}"
+    
     try:
         response = model.generate_content(
             prompt,
             generation_config=genai.GenerationConfig(
-                temperature=0.1, 
+                temperature=0.1,
                 response_mime_type="application/json",
-                response_schema=EvaluationSchema
+                response_schema=GradingSchema
             )
         )
-        return json.loads(response.text, strict=False)
+        return json.loads(response.text)
     except Exception as e:
-        st.error(f"Grading Failure: {e}")
+        st.error(f"Grading Engine Error: {e}")
         return None
 
-# =====================================================================
-# 5. SIDEBAR NAVIGATION & STATE MANAGEMENT
-# =====================================================================
+# ==============================================================================
+# 5. UI ROUTING & STATE CONTROLS
+# ==============================================================================
 st.sidebar.markdown("<h2 style='text-align: center;'>✨ UPSC Pro Dash</h2>", unsafe_allow_html=True)
 
-query = st.sidebar.text_input("🔍 Search Syllabus Topic:", placeholder="e.g., Cyber Security")
+user_topic = st.sidebar.text_input("🔍 Enter Syllabus Topic:", placeholder="e.g., Monetary Policy")
 
 if st.sidebar.button("🚀 Launch AI Engine"):
-    if query:
-        with st.spinner("⚡ Processing via Gemini 2.5 Flash Schema..."):
-            result = generate_dashboard(query)
-            if result:
-                st.session_state.dashboard_data = result
-                # Purge old evaluation data if it exists
-                st.session_state.pop('evaluation_data', None)
-                st.toast("Dashboard successfully compiled!", icon="✅")
+    if user_topic:
+        with st.spinner("⚡ Compiling via Gemini 2.5 Flash..."):
+            new_data = forge_dashboard(user_topic)
+            if new_data:
+                st.session_state.app_data = new_data
+                st.session_state.pop('mains_grade', None) # Clear old grades
+                st.toast("Dashboard Ready!", icon="✅")
     else:
-        st.sidebar.warning("Input required.")
+        st.sidebar.warning("Please enter a topic.")
 
 st.sidebar.markdown("---")
-active_tab = st.sidebar.radio(
-    "📂 Interface Modules",
-    ["📖 Deep Dive Explanation", 
-     "⚡ Strategic Cheat Sheet", 
-     "🎨 Analytical Flowcharts", 
-     "📰 GS Current Affairs", 
-     "🎯 Prelims Simulator (15)", 
-     "✍️ Mains Evaluation Lab (10)"]
+view = st.sidebar.radio(
+    "📂 Modules",
+    ["📖 Core Concepts", "⚡ 5-Pillar Cheat Sheet", "🎨 Flowcharts", "📰 Current Affairs", "🎯 Prelims (15 Qs)", "✍️ Mains Lab (10 Qs)"]
 )
 
-# =====================================================================
+# ==============================================================================
 # 6. MAIN CONTENT RENDERING
-# =====================================================================
-if 'dashboard_data' not in st.session_state or not st.session_state.dashboard_data:
+# ==============================================================================
+if 'app_data' not in st.session_state or not st.session_state.app_data:
     st.markdown("<h2 style='text-align: center; margin-top: 10vh;'>System Ready. 🚀</h2>", unsafe_allow_html=True)
-    st.info("👈 Enter a target topic in the sidebar to initialize the 2.5-Flash engine.")
+    st.info("👈 Enter a topic in the sidebar and launch the engine.")
 else:
-    data = st.session_state.dashboard_data
-    st.header(f"📌 {data.get('title', 'Module Active')}")
+    db = st.session_state.app_data
+    st.header(f"📌 {db.get('topic_title', 'Dashboard')}")
     st.markdown("---")
-    
-    # ----------------- MODULE 1: EXPLANATION -----------------
-    if active_tab == "📖 Deep Dive Explanation":
-        st.markdown(data.get('explanation', 'No explanation provided.'))
-        st.warning("🔥 **Core Targets & Keywords**")
-        for target in data.get('core_targets', []):
-            st.markdown(f"- {target}")
 
-    # ----------------- MODULE 2: CHEAT SHEET -----------------
-    elif active_tab == "⚡ Strategic Cheat Sheet":
-        st.subheader("5-Pillar Overview")
-        for key, value in data.get('cheat_sheet', {}).items():
-            formatted_title = key.replace('_', ' ')
-            st.info(f"### {formatted_title}\n\n{value}")
+    # --- CORE CONCEPTS ---
+    if view == "📖 Core Concepts":
+        st.markdown(db.get('core_explanation', 'No explanation provided.'))
+        st.warning("🔥 **High-Yield Targets**")
+        for topic in db.get('important_subtopics', []):
+            st.markdown(f"- {topic}")
 
-    # ----------------- MODULE 3: FLOWCHARTS -----------------
-    elif active_tab == "🎨 Analytical Flowcharts":
-        st.subheader("Process & Structure Mapping")
-        st.caption("Graphviz renders automatically. Raw code is provided below each map as a failsafe.")
+    # --- CHEAT SHEET ---
+    elif view == "⚡ 5-Pillar Cheat Sheet":
+        st.subheader("Strategic Overview")
+        for key, val in db.get('cheat_sheet', {}).items():
+            clean_title = key.replace('_', ' ').title()
+            st.info(f"### {clean_title}\n\n{val}")
+
+    # --- FLOWCHARTS ---
+    elif view == "🎨 Flowcharts":
+        st.subheader("Process & Structure Maps")
+        st.caption("If rendering fails, use the Raw Code expander.")
         
-        flowcharts = data.get('flowcharts', [])
-        for i, chart in enumerate(flowcharts):
+        for i, chart in enumerate(db.get('flowcharts', [])):
             st.markdown(f"### {chart.get('title', f'Map {i+1}')}")
-            dot_code = chart.get('code', '')
+            raw_code = chart.get('dot_code', '')
             
-            if dot_code:
+            if raw_code:
+                # Sanitizer: Enforce double quotes if the AI sneaks in single quotes
+                safe_code = raw_code.replace("'", '"')
                 try:
-                    st.graphviz_chart(dot_code)
+                    st.graphviz_chart(safe_code)
                 except Exception:
-                    st.error("Graphviz encountered an unsupported character sequence.")
-            else:
-                st.warning("No rendering code generated.")
-                
-            with st.expander("🛠️ View DOT Code"):
-                st.code(dot_code, language="dot")
+                    st.error("Graphviz rendering failed. See raw code below.")
+            
+            with st.expander("🛠️ View Raw DOT Code"):
+                st.code(raw_code, language="dot")
             st.markdown("---")
 
-    # ----------------- MODULE 4: CURRENT AFFAIRS -----------------
-    elif active_tab == "📰 GS Current Affairs":
-        st.subheader("Dynamic Syllabus Linkages")
-        for news in data.get('current_affairs', []):
+    # --- CURRENT AFFAIRS ---
+    elif view == "📰 Current Affairs":
+        st.subheader("Syllabus Linkages")
+        for news in db.get('recent_news', []):
             with st.expander(f"📌 {news.get('headline')} | {news.get('gs_paper')}", expanded=True):
-                st.markdown(f"**Relevance:** {news.get('relevance')}")
-                st.markdown(f"**Impact:** {news.get('impact')}")
+                st.write(f"**Relevance:** {news.get('relevance')}")
 
-    # ----------------- MODULE 5: PRELIMS -----------------
-    elif active_tab == "🎯 Prelims Simulator (15)":
+    # --- PRELIMS SIMULATOR ---
+    elif view == "🎯 Prelims (15 Qs)":
         st.subheader("Active Recall Assessment")
-        for i, q_data in enumerate(data.get('prelims', [])):
-            st.markdown(f"**Q{i+1}: {q_data.get('q')}**")
-            correct_ans = q_data.get('answer', '')
-            user_choice = st.radio("Select an option:", q_data.get('options', []), key=f"mcq_{i}", index=None, label_visibility="collapsed")
+        for i, mcq in enumerate(db.get('prelims_mcqs', [])):
+            st.markdown(f"**Q{i+1}: {mcq.get('question')}**")
+            correct = mcq.get('correct_answer', '')
+            choice = st.radio("Select:", mcq.get('options', []), key=f"q_{i}", index=None, label_visibility="collapsed")
             
-            if st.button("Submit Answer", key=f"btn_{i}"):
-                if user_choice == correct_ans:
-                    st.success(f"🎯 CORRECT! {correct_ans}")
-                elif user_choice is None:
+            if st.button("Check Answer", key=f"btn_{i}"):
+                if choice == correct:
+                    st.success(f"🎯 CORRECT! {correct}")
+                elif not choice:
                     st.warning("Please make a selection.")
                 else:
-                    st.error(f"❌ INCORRECT. The valid answer is: {correct_ans}")
-                
-                if q_data.get('explanation'):
-                    st.info(f"**Analysis:** {q_data.get('explanation')}")
+                    st.error(f"❌ INCORRECT. Answer: {correct}")
+                st.info(f"**Analysis:** {mcq.get('short_explanation')}")
             st.markdown("---")
 
-    # ----------------- MODULE 6: MAINS EVALUATION -----------------
-    elif active_tab == "✍️ Mains Evaluation Lab (10)":
-        st.subheader("AI-Assisted Answer Writing")
-        mains_qs = data.get('mains', [])
+    # --- MAINS LAB ---
+    elif view == "✍️ Mains Lab (10 Qs)":
+        st.subheader("AI-Assisted Drafting")
+        questions = db.get('mains_questions', [])
         
-        if mains_qs:
-            target_q = st.selectbox("Select a prompt to draft:", mains_qs)
+        if questions:
+            active_q = st.selectbox("Select Prompt:", questions)
             
-            # Reset the text area and evaluation if the user changes the question
-            if 'active_question' not in st.session_state or st.session_state.active_question != target_q:
-                st.session_state.active_question = target_q
-                st.session_state.mains_draft = ""
-                st.session_state.pop('evaluation_data', None)
+            # Reset workspace on question change
+            if 'last_q' not in st.session_state or st.session_state.last_q != active_q:
+                st.session_state.last_q = active_q
+                st.session_state.draft_text = ""
+                st.session_state.pop('mains_grade', None)
 
-            st.write(f"**Mission:** {target_q}")
-            draft_text = st.text_area("Draft workspace:", height=250, key="mains_draft")
-            word_count = len(draft_text.split())
-            st.caption(f"Current Word Count: **{word_count}**")
+            st.write(f"**Mission:** {active_q}")
+            draft = st.text_area("Workspace:", height=250, key="draft_text")
+            
+            def clear_memory():
+                st.session_state.draft_text = ""
+                st.session_state.pop('mains_grade', None)
 
-            # Native Streamlit callback ensures memory is wiped cleanly without throwing exceptions
-            def wipe_workspace():
-                st.session_state.mains_draft = ""
-                st.session_state.pop('evaluation_data', None)
+            c1, c2 = st.columns([1, 1])
+            with c1: 
+                submit = st.button("Grade via 2.5-Flash")
+            with c2: 
+                st.button("Clear Workspace", on_click=clear_memory)
 
-            col1, col2 = st.columns(2)
-            with col1:
-                trigger_eval = st.button("Grade via 2.5-Flash")
-            with col2:
-                st.button("Clear Workspace", on_click=wipe_workspace)
-
-            if trigger_eval:
-                if word_count < 30:
-                    st.error("Draft is too brief for a structural assessment. Expand your points.")
+            if submit:
+                if len(draft.split()) < 30:
+                    st.error("Draft is too short for formal assessment.")
                 else:
-                    with st.spinner("Analyzing parameters and formatting..."):
-                        eval_report = grade_mains_answer(target_q, draft_text)
-                        if eval_report:
-                            st.session_state.evaluation_data = eval_report
+                    with st.spinner("Analyzing parameters..."):
+                        grade_report = grade_answer(active_q, draft)
+                        if grade_report:
+                            st.session_state.mains_grade = grade_report
 
-            # Display the grading report if it exists
-            if 'evaluation_data' in st.session_state:
-                e_report = st.session_state.evaluation_data
+            if 'mains_grade' in st.session_state:
+                gr = st.session_state.mains_grade
                 st.markdown("---")
-                st.metric(label="Indicative Score", value=e_report.get('marks_awarded', 'N/A'))
+                st.metric("Indicative Score", gr.get('marks_out_of_15', 'N/A'))
                 
-                st.info(f"**Intro Dynamics:** {e_report.get('intro_feedback')}\n\n"
-                        f"**Body Structure:** {e_report.get('body_feedback')}\n\n"
-                        f"**Conclusion Alignment:** {e_report.get('conclusion_feedback')}")
+                st.info(f"**Intro:** {gr.get('introduction_feedback')}\n\n**Body:** {gr.get('body_feedback')}\n\n**Conclusion:** {gr.get('conclusion_feedback')}")
+                st.success("**Strengths:**\n" + "\n".join([f"- {s}" for s in gr.get('strengths', [])]))
+                st.warning("**Improvements:**\n" + "\n".join([f"- {i}" for i in gr.get('improvements', [])]))
                 
-                st.success("**Core Strengths:**\n" + "\n".join([f"- {s}" for s in e_report.get('strengths', [])]))
-                st.warning("**Critical Improvements:**\n" + "\n".join([f"- {i}" for i in e_report.get('improvements', [])]))
-                
-                with st.expander("📘 View Optimal Model Framework"):
-                    st.write(e_report.get('model_framework'))
-                  
+                with st.expander("📘 Read Model Framework"):
+                    st.write(gr.get('ideal_framework'))
