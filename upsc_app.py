@@ -40,13 +40,14 @@ def fetch_topic_data_from_ai(topic):
     prompt = f"""
     You are an elite UPSC tutor. Generate a comprehensive JSON study dashboard for: "{topic}".
     
-    CRITICAL INSTRUCTIONS:
-    1. EXPLANATION: 3 brief paragraphs.
-    2. ONE-PAGER: 5 keys mapped below. Keep values concise.
-    3. FLOWCHARTS: EXACTLY 5 Graphviz DOT codes (rankdir=TB). DO NOT use backslashes (\). Use single quotes instead of double quotes inside the DOT labels.
-    4. CURRENT AFFAIRS: 3 recent developments mapped to GS Papers.
-    5. PRELIMS: EXACTLY 15 MCQs. Keep explanations under 15 words.
-    6. MAINS: EXACTLY 10 analytical Mains questions.
+    CRITICAL ANTI-CRASH INSTRUCTIONS:
+    1. SINGLE LINE STRINGS: You MUST NOT use literal newlines (Enter key) inside any JSON strings. Write all text, explanations, and code on a single continuous horizontal line. 
+    2. FLOWCHARTS: EXACTLY 5 Graphviz DOT codes (rankdir=TB). Write the entire DOT code on ONE line. Do not use double quotes inside the DOT code (use single quotes). 
+    3. EXPLANATION: 3 brief paragraphs.
+    4. ONE-PAGER: 5 keys mapped below.
+    5. CURRENT AFFAIRS: 3 recent developments.
+    6. PRELIMS: EXACTLY 15 MCQs.
+    7. MAINS: EXACTLY 10 analytical Mains questions.
     
     Respond strictly in this JSON format:
     {{
@@ -75,12 +76,12 @@ def fetch_topic_data_from_ai(topic):
     }}
     """
     try:
-        # Native application/json enforcement prevents all parsing crashes
         response = model.generate_content(
             prompt,
             generation_config={"max_output_tokens": 8192, "temperature": 0.2, "response_mime_type": "application/json"}
         )
-        return json.loads(response.text)
+        # Added strict=False to forgive any accidental line breaks the AI still tries to sneak in
+        return json.loads(response.text, strict=False)
     except Exception as e:
         st.error(f"Data API Error: {e}")
         return None
@@ -92,6 +93,8 @@ def evaluate_mains_answer(question, user_answer):
     Grade this UPSC Mains answer out of 15 marks. 
     Question: {question}
     Answer: {user_answer}
+    
+    CRITICAL: Do NOT use line breaks inside the JSON strings. Keep all values on one line.
     
     Format output exactly as JSON:
     {{
@@ -109,7 +112,7 @@ def evaluate_mains_answer(question, user_answer):
             prompt,
             generation_config={"temperature": 0.1, "response_mime_type": "application/json"}
         )
-        return json.loads(response.text)
+        return json.loads(response.text, strict=False)
     except Exception as e:
         st.error(f"Evaluation API Error: {e}")
         return None
@@ -124,7 +127,7 @@ search_query = st.sidebar.text_input("🔍 Enter Syllabus Topic:", placeholder="
 
 if st.sidebar.button("🚀 Launch AI Engine"):
     if search_query:
-        with st.spinner("⚡ Forging deep-dive dashboard (Enforcing native JSON)..."):
+        with st.spinner("⚡ Forging deep-dive dashboard (Enforcing anti-crash JSON rules)..."):
             fresh_data = fetch_topic_data_from_ai(search_query)
             if fresh_data:
                 st.session_state.current_data = fresh_data
@@ -145,7 +148,7 @@ page = st.sidebar.radio(
 # ---------------------------------------------------------
 if 'current_data' not in st.session_state or not st.session_state.current_data:
     st.markdown("<h1 style='text-align: center; margin-top: 10vh;'>Welcome to the Future of Exam Prep 🚀</h1>", unsafe_allow_html=True)
-    st.info("👈 Enter a topic in the sidebar and click Launch. The native JSON engine will build your dashboard without crashing.")
+    st.info("👈 Enter a topic in the sidebar and click Launch. The native JSON engine will build your dashboard.")
 else:
     data = st.session_state.current_data
     st.header(f"📌 {data.get('title', 'Dashboard')}")
@@ -173,7 +176,7 @@ else:
                 try:
                     st.graphviz_chart(code)
                 except Exception as e:
-                    st.error(f"Graphviz rendering error: The AI generated an incompatible DOT character. Raw code:\n{code}")
+                    st.error(f"Graphviz rendering error. Raw code:\n{code}")
 
     elif page == "📰 GS Current Affairs":
         st.subheader("Recent Developments")
@@ -211,7 +214,6 @@ else:
             words = len(ans_text.split())
             st.progress(min(words / 250, 1.0))
             
-            # Safe callback to prevent StreamlitAPIException crashes
             def clear_ws():
                 st.session_state.mains_text = ""
                 st.session_state.pop('active_evaluation', None)
