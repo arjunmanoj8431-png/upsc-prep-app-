@@ -1,6 +1,7 @@
 import streamlit as st
 import json
 import google.generativeai as genai
+import typing
 
 # =====================================================================
 # 1. PAGE CONFIGURATION & RESPONSIVE CSS
@@ -54,7 +55,52 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =====================================================================
-# 2. API INITIALIZATION
+# 2. SCHEMA DEFINITIONS (ENFORCES PERFECT JSON SYNTAX)
+# =====================================================================
+class CheatSheet(typing.TypedDict):
+    Constitutional_and_Legal_Basis: str
+    Statistics_and_Reports: str
+    Conceptual_Keywords: str
+    Current_Affairs_Context: str
+    Challenges_and_Solutions: str
+
+class Flowchart(typing.TypedDict):
+    title: str
+    code: str
+
+class CurrentAffair(typing.TypedDict):
+    gs_paper: str
+    headline: str
+    relevance: str
+    impact: str
+
+class MCQ(typing.TypedDict):
+    q: str
+    options: typing.List[str]
+    answer: str
+    explanation: str
+
+class DashboardSchema(typing.TypedDict):
+    title: str
+    explanation: str
+    core_targets: typing.List[str]
+    cheat_sheet: CheatSheet
+    flowcharts: typing.List[Flowchart]
+    current_affairs: typing.List[CurrentAffair]
+    prelims: typing.List[MCQ]
+    mains: typing.List[str]
+
+class EvaluationSchema(typing.TypedDict):
+    marks_awarded: str
+    intro_feedback: str
+    body_feedback: str
+    conclusion_feedback: str
+    strengths: typing.List[str]
+    improvements: typing.List[str]
+    model_framework: str
+
+# =====================================================================
+# 3. API INITIALIZATION
 # =====================================================================
 if "GEMINI_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
@@ -62,61 +108,29 @@ else:
     genai.configure(api_key="YOUR_API_KEY_HERE") 
 
 # =====================================================================
-# 3. AI GENERATION ENGINES (GEMINI 2.5 FLASH)
+# 4. AI GENERATION ENGINES (GEMINI 2.5 FLASH)
 # =====================================================================
 def generate_dashboard(topic):
-    """Generates the entire study dashboard strictly formatted as JSON."""
+    """Generates the dashboard mathematically constrained to the DashboardSchema."""
     model = genai.GenerativeModel('gemini-2.5-flash')
     
     prompt = f"""
     You are an elite UPSC exam strategist. Generate a comprehensive study dashboard for the topic: "{topic}".
     
     CRITICAL INSTRUCTIONS:
-    - You must output EXACTLY 15 MCQs for Prelims.
-    - You must output EXACTLY 10 questions for Mains.
-    - For Graphviz DOT codes, keep node labels concise and use standard double quotes. The JSON API will escape them.
-    
-    Follow this exact JSON schema:
-    {{
-        "title": "Topic Title",
-        "explanation": "A 3-paragraph conceptual breakdown...",
-        "core_targets": ["Target 1", "Target 2", "Target 3"],
-        "cheat_sheet": {{
-            "Constitutional_and_Legal_Basis": "...",
-            "Statistics_and_Reports": "...",
-            "Conceptual_Keywords": "...",
-            "Current_Affairs_Context": "...",
-            "Challenges_and_Solutions": "..."
-        }},
-        "flowcharts": [
-            {{"title": "1. Core Mechanism", "code": "digraph G {{ rankdir=TB; node [shape=box]; \\"Node A\\" -> \\"Node B\\"; }}"}},
-            {{"title": "2. Evolution", "code": "..."}},
-            {{"title": "3. Setup", "code": "..."}},
-            {{"title": "4. Impact", "code": "..."}},
-            {{"title": "5. Strategy", "code": "..."}}
-        ],
-        "current_affairs": [
-            {{"gs_paper": "GS Paper X", "headline": "...", "relevance": "...", "impact": "..."}},
-            {{"gs_paper": "...", "headline": "...", "relevance": "...", "impact": "..."}},
-            {{"gs_paper": "...", "headline": "...", "relevance": "...", "impact": "..."}}
-        ],
-        "prelims": [
-            {{"q": "Q1...", "options": ["A) ...", "B) ...", "C) ...", "D) ..."], "answer": "A) ...", "explanation": "..."}}
-        ],
-        "mains": [
-            "1. Mains Question 1...",
-            "2. Mains Question 2..."
-        ]
-    }}
+    - You must output EXACTLY 15 highly distinct MCQs for Prelims.
+    - You must output EXACTLY 10 distinct questions for Mains.
+    - For Graphviz DOT codes, use standard formatting (rankdir=TB). The backend will automatically handle quote escaping.
     """
     try:
         response = model.generate_content(
             prompt,
-            generation_config={
-                "max_output_tokens": 8192, 
-                "temperature": 0.2, 
-                "response_mime_type": "application/json"
-            }
+            generation_config=genai.GenerationConfig(
+                max_output_tokens=8192, 
+                temperature=0.2, 
+                response_mime_type="application/json",
+                response_schema=DashboardSchema
+            )
         )
         return json.loads(response.text, strict=False)
     except Exception as e:
@@ -124,32 +138,22 @@ def generate_dashboard(topic):
         return None
 
 def grade_mains_answer(question, user_answer):
-    """Evaluates a student's answer and returns a JSON grading report."""
+    """Evaluates a student's answer constrained to the EvaluationSchema."""
     model = genai.GenerativeModel('gemini-2.5-flash')
     
     prompt = f"""
     Act as a strict UPSC examiner. Grade this answer out of 15 marks.
     Question: {question}
     Answer: {user_answer}
-    
-    Follow this exact JSON schema:
-    {{
-        "marks_awarded": "X/15",
-        "intro_feedback": "...",
-        "body_feedback": "...",
-        "conclusion_feedback": "...",
-        "strengths": ["...", "..."],
-        "improvements": ["...", "..."],
-        "model_framework": "..."
-    }}
     """
     try:
         response = model.generate_content(
             prompt,
-            generation_config={
-                "temperature": 0.1, 
-                "response_mime_type": "application/json"
-            }
+            generation_config=genai.GenerationConfig(
+                temperature=0.1, 
+                response_mime_type="application/json",
+                response_schema=EvaluationSchema
+            )
         )
         return json.loads(response.text, strict=False)
     except Exception as e:
@@ -157,7 +161,7 @@ def grade_mains_answer(question, user_answer):
         return None
 
 # =====================================================================
-# 4. SIDEBAR NAVIGATION & STATE MANAGEMENT
+# 5. SIDEBAR NAVIGATION & STATE MANAGEMENT
 # =====================================================================
 st.sidebar.markdown("<h2 style='text-align: center;'>✨ UPSC Pro Dash</h2>", unsafe_allow_html=True)
 
@@ -165,7 +169,7 @@ query = st.sidebar.text_input("🔍 Search Syllabus Topic:", placeholder="e.g., 
 
 if st.sidebar.button("🚀 Launch AI Engine"):
     if query:
-        with st.spinner("⚡ Processing via Gemini 2.5 Flash..."):
+        with st.spinner("⚡ Processing via Gemini 2.5 Flash Schema..."):
             result = generate_dashboard(query)
             if result:
                 st.session_state.dashboard_data = result
@@ -187,7 +191,7 @@ active_tab = st.sidebar.radio(
 )
 
 # =====================================================================
-# 5. MAIN CONTENT RENDERING
+# 6. MAIN CONTENT RENDERING
 # =====================================================================
 if 'dashboard_data' not in st.session_state or not st.session_state.dashboard_data:
     st.markdown("<h2 style='text-align: center; margin-top: 10vh;'>System Ready. 🚀</h2>", unsafe_allow_html=True)
