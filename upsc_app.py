@@ -89,31 +89,32 @@ else:
 def fetch_topic_data_from_ai(topic):
     model = genai.GenerativeModel('gemini-2.5-flash')
     
-    # We added instructions to be DENSE and CONCISE to fit the 15-question quota into the token limit
+    # Adjusted quotas: 15 Prelims, 10 Mains. Ruthless conciseness mandated.
     prompt = f"""
     You are an elite UPSC tutor. Generate a massive, deep-dive study dashboard for: "{topic}".
     
-    CRITICAL INSTRUCTIONS TO AVOID TRUNCATION LIMITS:
-    1. EXPLANATION: 4-5 dense paragraphs. Keep it strictly conceptual.
-    2. ONE-PAGER: 5-pillar strategic summary using bullet points to save tokens.
-    3. FLOWCHARTS: EXACTLY 5 Graphviz DOT flowcharts (rankdir=TB). Keep node labels brief.
-    4. CURRENT AFFAIRS: 3 recent news developments mapped to GS Papers.
-    5. PRELIMS: EXACTLY 15 high-difficulty MCQs. Keep explanations to 1 strict sentence.
-    6. MAINS: EXACTLY 15 analytical Mains questions.
+    CRITICAL INSTRUCTIONS TO PREVENT JSON TRUNCATION (STRICT TOKEN LIMIT):
+    1. EXPLANATION: 3 paragraphs max. Be hyper-concise.
+    2. ONE-PAGER: 5-pillar summary. Use extremely brief bullet points.
+    3. FLOWCHARTS: EXACTLY 5 Graphviz DOT flowcharts (rankdir=TB). Keep node labels under 4 words.
+    4. CURRENT AFFAIRS: EXACTLY 3 recent news developments. Very brief descriptions.
+    5. PRELIMS: EXACTLY 15 high-difficulty MCQs. (Keep options short. Explanations MUST be under 15 words).
+    6. MAINS: EXACTLY 10 analytical Mains questions.
+    7. JSON CLOSURE: You MUST ensure the final JSON brackets `}}` are properly closed. Do not cut off mid-sentence.
     
     Respond ONLY with a valid JSON object. Do not include markdown code blocks like ```json.
     
     Structure exactly like this:
     {{
         "title": "Clear Topic Title",
-        "explanation": "Deep, conceptual explanation here...",
+        "explanation": "Conceptual explanation here...",
         "important_topics": ["Subtopic 1", "Subtopic 2", "Subtopic 3", "Subtopic 4", "Subtopic 5"],
         "one_pager": {{
-            "Constitutional_and_Legal_Basis": "Detailed facts...",
-            "High_Yield_Statistics_and_Reports": "Detailed facts...",
-            "Core_Conceptual_Keywords": "Detailed facts...",
-            "Current_Affairs_Context": "Detailed facts...",
-            "Critical_Challenges_and_Solutions": "Detailed facts..."
+            "Constitutional_and_Legal_Basis": "Brief facts...",
+            "High_Yield_Statistics_and_Reports": "Brief facts...",
+            "Core_Conceptual_Keywords": "Brief facts...",
+            "Current_Affairs_Context": "Brief facts...",
+            "Critical_Challenges_and_Solutions": "Brief facts..."
         }},
         "flowcharts": [
             {{"title": "1. Core Mechanism", "code": "digraph G {{ rankdir=TB; node [shape=box, style=filled, fillcolor=lightblue]; A -> B; }}"}},
@@ -125,9 +126,9 @@ def fetch_topic_data_from_ai(topic):
         "current_affairs": [
             {{
                 "gs_paper": "GS Paper 3",
-                "headline": "Recent Headline related to topic...",
-                "relevance": "How this connects to the static syllabus...",
-                "impact": "The real-world implications or recent updates..."
+                "headline": "Brief Headline...",
+                "relevance": "Brief syllabus connection...",
+                "impact": "Brief impact..."
             }}
         ],
         "pyq_prelims": [
@@ -136,7 +137,7 @@ def fetch_topic_data_from_ai(topic):
                 "q": "Question text...", 
                 "options": ["A) Opt 1", "B) Opt 2", "C) Opt 3", "D) Opt 4"], 
                 "answer": "A) Opt 1", 
-                "explanation": "Explanation here..."
+                "explanation": "Brief explanation..."
             }}
         ],
         "pyq_mains": [
@@ -146,14 +147,21 @@ def fetch_topic_data_from_ai(topic):
     """
     
     try:
-        # FORCING THE MAXIMUM TOKEN LIMIT
         response = model.generate_content(
             prompt,
             generation_config={"max_output_tokens": 8192, "temperature": 0.2}
         )
         raw_text = response.text.strip()
+        
+        # Strip markdown if it somehow sneaks in
+        if raw_text.startswith("```json"):
+            raw_text = raw_text[7:]
+        if raw_text.endswith("```"):
+            raw_text = raw_text[:-3]
+            
         start_index = raw_text.find('{')
         end_index = raw_text.rfind('}')
+        
         if start_index != -1 and end_index != -1:
             clean_json = raw_text[start_index:end_index+1]
             return json.loads(clean_json, strict=False)
@@ -170,17 +178,17 @@ def evaluate_mains_answer(question, user_answer):
     Question: {question}
     Candidate's Answer: {user_answer}
     
-    Critique this response rigorously under exact UPSC standards out of a maximum of 15 marks. Be objective. Real examiners rarely award above 9/15 unless the answer is masterfully multi-dimensional.
+    Critique this response rigorously under exact UPSC standards out of a maximum of 15 marks. Be objective.
     
     Respond ONLY with a valid JSON object matching this structure exactly:
     {{
         "marks_allocated": "X/15",
-        "intro_critique": "Analysis of their opening, conceptual framework, definitions, or context...",
-        "body_critique": "Analysis of arguments, dimensions explored, facts integration, structural coherence...",
-        "conclusion_critique": "Analysis of the way forward, balance, optimism, and alignment with policy frameworks...",
+        "intro_critique": "Analysis of their opening...",
+        "body_critique": "Analysis of arguments, dimensions explored...",
+        "conclusion_critique": "Analysis of the way forward...",
         "explicit_strengths": ["Strength 1", "Strength 2"],
-        "critical_improvements": ["What to add to score 2 more marks", "Missing parameters or data links"],
-        "model_approach": "A brief overview or bullet points of what a top-scoring baseline approach would feature..."
+        "critical_improvements": ["Improvement 1", "Improvement 2"],
+        "model_approach": "A brief overview of a top-scoring approach..."
     }}
     """
     try:
@@ -189,6 +197,12 @@ def evaluate_mains_answer(question, user_answer):
             generation_config={"temperature": 0.1}
         )
         raw_text = response.text.strip()
+        
+        if raw_text.startswith("```json"):
+            raw_text = raw_text[7:]
+        if raw_text.endswith("```"):
+            raw_text = raw_text[:-3]
+            
         start = raw_text.find('{')
         end = raw_text.rfind('}')
         if start != -1 and end != -1:
@@ -207,7 +221,7 @@ search_query = st.sidebar.text_input("🔍 Enter Syllabus Topic:", placeholder="
 
 if st.sidebar.button("🚀 Launch AI Engine"):
     if search_query:
-        with st.spinner("⚡ Forging deep-dive dashboard (Generating 30+ Qs & Maps)..."):
+        with st.spinner("⚡ Forging deep-dive dashboard (Generating 25 Qs & 5 Maps)..."):
             fresh_data = fetch_topic_data_from_ai(search_query)
             if fresh_data:
                 st.session_state.current_data = fresh_data
@@ -215,7 +229,7 @@ if st.sidebar.button("🚀 Launch AI Engine"):
                     del st.session_state.active_evaluation
                 st.toast("Dashboard successfully generated!", icon="✅")
             else:
-                st.sidebar.error("Data generation failed due to size limits. Try again or search a slightly narrower topic.")
+                st.sidebar.error("Data generation failed due to size limits. Try launching again.")
     else:
         st.sidebar.warning("Please enter a topic first.")
 
@@ -227,7 +241,7 @@ page = st.sidebar.radio(
      "🎨 Visual Maps (5 Flowcharts)", 
      "📰 GS Current Affairs",
      "🎯 Prelims Combat (15 MCQs)", 
-     "✍️ Mains Masterclass (15 Qs)"]
+     "✍️ Mains Masterclass (10 Qs)"]
 )
 
 # ---------------------------------------------------------
@@ -327,8 +341,8 @@ else:
                                 st.info(f"**Analysis:** {pyq.get('explanation')}")
                     st.markdown("---")
 
-    # --- PAGE 6: 15 MAINS QUESTIONS WITH ACTIVE AI GRADING ---
-    elif page == "✍️ Mains Masterclass (15 Qs)":
+    # --- PAGE 6: 10 MAINS QUESTIONS WITH ACTIVE AI GRADING ---
+    elif page == "✍️ Mains Masterclass (10 Qs)":
         st.subheader("Mains Answer Writing & AI Evaluation Lab")
         questions = [q['q'] for q in data.get('pyq_mains', []) if 'q' in q]
         
