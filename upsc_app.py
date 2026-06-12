@@ -41,11 +41,29 @@ st.markdown("""
         box-shadow: 0 4px 10px rgba(0,0,0,0.08);
         background-color: white;
     }
-    /* Custom Sidebar */
+    
+    /* THE CSS BUG FIX FOR THE SIDEBAR AND SEARCH BOX */
     [data-testid="stSidebar"] {
         background: linear-gradient(to bottom, #141E30, #243B55);
     }
-    [data-testid="stSidebar"] * { color: white !important; }
+    
+    /* Make labels and descriptions white, but EXCLUDE the input box */
+    [data-testid="stSidebar"] p, 
+    [data-testid="stSidebar"] label, 
+    [data-testid="stSidebar"] h2 { 
+        color: white !important; 
+    }
+    
+    /* Force the search box to always have a white background with dark black text */
+    div[data-baseweb="input"] {
+        background-color: #ffffff !important;
+        border-radius: 8px;
+    }
+    .stTextInput input {
+        color: #000000 !important;
+        -webkit-text-fill-color: #000000 !important;
+        font-weight: 600;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -182,7 +200,6 @@ else:
         if one_pager:
             cols = st.columns(2)
             for i, (key, value) in enumerate(one_pager.items()):
-                # Distribute the 5 pillars beautifully across the two columns
                 with cols[i % 2]:
                     formatted_title = key.replace('_', ' ')
                     st.info(f"### {formatted_title}\n\n{value}")
@@ -252,7 +269,6 @@ else:
             answer = st.text_area("Draft your response below (Aim for 150 - 250 words):", height=300)
             words = len(answer.split())
             
-            # Interactive Progress Bar for Word Count
             st.progress(min(words / 250, 1.0))
             st.caption(f"Current Word Count: {words} / 250")
             
