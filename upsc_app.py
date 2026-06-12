@@ -53,7 +53,7 @@ else:
 # 3. AI Generation Engines
 # ---------------------------------------------------------
 def fetch_dashboard_data(topic):
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    model = genai.GenerativeModel('gemini-1.5-flash')
     
     prompt = f"""
     You are an elite UPSC tutor. Generate a study dashboard for: "{topic}".
@@ -95,7 +95,6 @@ def fetch_dashboard_data(topic):
             prompt,
             generation_config={"temperature": 0.2, "response_mime_type": "application/json"}
         )
-        # strict=False forgives any minor formatting errors the AI makes
         return json.loads(response.text, strict=False)
     except Exception as e:
         st.error(f"Failed to generate valid data. Error: {e}")
@@ -156,7 +155,7 @@ page = st.sidebar.radio(
 )
 
 # ---------------------------------------------------------
-# 5. Main Content Views (Stacking for Android)
+# 5. Main Content Views
 # ---------------------------------------------------------
 if 'current_data' not in st.session_state or not st.session_state.current_data:
     st.markdown("<h2 style='text-align: center; margin-top: 5vh;'>Welcome to UPSC AI 🚀</h2>", unsafe_allow_html=True)
@@ -188,16 +187,16 @@ else:
             st.markdown(f"### {fc.get('title', f'Map {i+1}')}")
             code = fc.get('code', '')
             
-            # Try to draw the image
             try:
                 if code:
-                    st.graphviz_chart(code)
+                    # THE FIX: Flip the AI's single quotes into Graphviz-safe double quotes
+                    valid_code = code.replace("'", '"')
+                    st.graphviz_chart(valid_code)
                 else:
                     st.warning("No data generated for this map.")
             except Exception:
                 st.error("Graphviz engine rendering error on this device.")
             
-            # ALWAYS provide the raw code as a fallback for Android/Cloud
             with st.expander("🛠️ View/Copy Raw Code"):
                 st.code(code, language="dot")
             st.markdown("---")
@@ -236,7 +235,6 @@ else:
         if qs:
             sel_q = st.selectbox("Select question to practice:", qs)
             
-            # Reset workspace if question changes
             if 'eval_q_track' not in st.session_state or st.session_state.eval_q_track != sel_q:
                 st.session_state.eval_q_track = sel_q
                 st.session_state.mains_text = ""
@@ -247,7 +245,6 @@ else:
             words = len(ans_text.split())
             st.caption(f"Word Count: {words}")
             
-            # Safe memory wipe function
             def clear_workspace():
                 st.session_state.mains_text = ""
                 st.session_state.pop('eval_result', None)
@@ -263,7 +260,6 @@ else:
 
             st.button("Clear Workspace", on_click=clear_workspace)
 
-            # Display Evaluation
             if 'eval_result' in st.session_state:
                 e = st.session_state.eval_result
                 st.markdown("---")
